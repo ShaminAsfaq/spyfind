@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Spyfind</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #1c1e21;
+            line-height: 1.5;
+            padding-bottom: 40px;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .navbar-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .back-btn {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            color: #667eea;
+            font-weight: bold;
+            display: none; /* Hidden by default */
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        /* Profile Card Styles */
+        .profile-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .profile-banner {
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .profile-banner::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .profile-content {
+            padding: 0 20px 20px;
+            position: relative;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background-color: #667eea;
+            margin-top: -60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            color: white;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-info {
+            margin-top: 15px;
+        }
+
+        .profile-name {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #050505;
+        }
+
+        .profile-username {
+            font-size: 1.1rem;
+            color: #65676b;
+            margin-bottom: 10px;
+        }
+
+        .profile-bio {
+            font-size: 1rem;
+            margin: 15px 0;
+            white-space: pre-wrap;
+        }
+
+        .profile-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            color: #65676b;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #e4e6eb;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #65676b;
+            text-transform: uppercase;
+        }
+
+        /* Tweet Styles */
+        .tweets-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 20px 0 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+
+        .tweets-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .tweet-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .tweet-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .tweet-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            flex-shrink: 0;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .tweet-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .tweet-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tweet-author-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .tweet-meta {
+            font-size: 0.85rem;
+            color: #65676b;
+        }
+
+        .tweet-content {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .tweet-footer {
+            display: flex;
+            gap: 25px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f2f5;
+            color: #65676b;
+            font-size: 0.9rem;
+        }
+
+        .tweet-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Loading & Sentinel */
+        .loading-sentinel {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+            padding: 20px;
+        }
+
+        .no-more-tweets {
+            text-align: center;
+            padding: 30px;
+            color: white;
+            font-style: italic;
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hashtag {
+            color: #1da1f2;
+            text-decoration: none;
+        }
+
+        .hashtag:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-content">
+            <h1>Spyfind</h1>
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="window.location.href='/'">🏠 Home</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin'">👥 Users</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post Tweet</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <button id="backBtn" onclick="handleBack()" class="back-btn">
+            ← Go Back
+        </button>
+
+        <div class="profile-card">
+            <div class="profile-banner" id="profileBanner"></div>
+            <div class="profile-content">
+                <div class="profile-avatar" id="profileAvatar"></div>
+                <div class="profile-info">
+                    <h1 class="profile-name" id="profileName">Loading...</h1>
+                    <div class="profile-username" id="profileUsername"></div>
+                    
+                    <div class="profile-bio" id="profileBio"></div>
+                    
+                    <div class="profile-meta">
+                        <div class="meta-item" id="metaLocation">
+                            📍 <span></span>
+                        </div>
+                        <div class="meta-item" id="metaUrl">
+                            🔗 <span></span>
+                        </div>
+                        <div class="meta-item" id="metaJoined">
+                            📅 <span>Joined...</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="statFollowers">0</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="statFollowing">0</span>
+                            <span class="stat-label">Following</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="statPosts">0</span>
+                            <span class="stat-label">Posts</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="statLikes">0</span>
+                            <span class="stat-label">Likes</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="tweets-title">📝 Tweets</h2>
+        <div class="tweets-container" id="tweetsContainer">
+            <!-- Tweets will be loaded here -->
+        </div>
+
+        <div id="loadingSentinel" class="loading-sentinel">
+            <div class="loading-spinner"></div>
+            <span style="margin-left: 10px;">Loading older tweets...</span>
+        </div>
+        <div id="noMoreTweets" class="no-more-tweets" style="display: none;">
+            ✨ You've reached the end of the timeline.
+        </div>
+    </div>
+
+    <script>
+        const userId = window.location.pathname.split('/').pop();
+        
+        function handleBack() {
+            // If we have history to go back to within our app
+            if (window.history.length > 1 && document.referrer && (document.referrer.includes(window.location.hostname) || document.referrer.includes('localhost'))) {
+                window.history.back();
+            } else {
+                // Otherwise go to admin panel or home
+                window.location.href = '/admin';
+            }
+        }
+
+        let skip = 0;
+        const limit = 20;
+        let isLoading = false;
+        let hasMore = true;
+        let userData = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Show back button ONLY if opened in same tab (has history)
+            const backBtn = document.getElementById('backBtn');
+            const hasInternalReferrer = document.referrer && (document.referrer.includes(window.location.hostname) || document.referrer.includes('localhost'));
+            
+            // In a new tab, history.length is usually 1
+            if (window.history.length > 1 && hasInternalReferrer) {
+                backBtn.style.display = 'inline-flex';
+            }
+
+            loadUserProfile();
+            loadTweets();
+            setupInfiniteScroll();
+        });
+
+        async function loadUserProfile() {
+            try {
+                const response = await fetch(`/api/users/${userId}`);
+                if (!response.ok) throw new Error('User not found');
+                
+                userData = await response.json();
+                renderProfile(userData);
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                document.getElementById('profileName').textContent = 'User Not Found';
+            }
+        }
+
+        function renderProfile(user) {
+            document.title = `${user.display_name} (@${user.username}) - Spyfind`;
+            
+            // Set Avatar
+            const avatarDiv = document.getElementById('profileAvatar');
+            const firstLetter = user.display_name.charAt(0).toUpperCase();
+            const avatarColor = user.profile_color || '#667eea';
+            avatarDiv.style.backgroundColor = avatarColor;
+            
+            if (user.profile_image_url) {
+                avatarDiv.innerHTML = `<img src="${user.profile_image_url}" onerror="this.parentElement.innerHTML='${firstLetter}'; this.parentElement.style.backgroundColor='${avatarColor}';">`;
+            } else {
+                avatarDiv.textContent = firstLetter;
+            }
+
+            // Set Banner
+            const bannerDiv = document.getElementById('profileBanner');
+            if (user.profile_banner_url) {
+                bannerDiv.style.backgroundImage = `url(${user.profile_banner_url})`;
+                bannerDiv.style.backgroundSize = 'cover';
+                bannerDiv.style.backgroundPosition = 'center';
+            } else if (user.banner_color) {
+                bannerDiv.style.background = user.banner_color;
+            }
+
+            // Set text info
+            document.getElementById('profileName').textContent = user.display_name;
+            document.getElementById('profileUsername').textContent = `@${user.username}`;
+            document.getElementById('profileBio').textContent = user.bio || 'No bio provided.';
+            
+            // Meta items
+            const locSpan = document.querySelector('#metaLocation span');
+            if (user.location) locSpan.textContent = user.location;
+            else document.getElementById('metaLocation').style.display = 'none';
+
+            const urlSpan = document.querySelector('#metaUrl span');
+            if (user.url) {
+                urlSpan.innerHTML = `<a href="${user.url}" target="_blank" style="color: #667eea; text-decoration: none;">${user.url}</a>`;
+            } else {
+                document.getElementById('metaUrl').style.display = 'none';
+            }
+
+            const joinedDate = new Date(user.created_at);
+            document.querySelector('#metaJoined span').textContent = `Joined ${joinedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+
+            // Stats
+            document.getElementById('statFollowers').textContent = formatNumber(user.followers_count);
+            document.getElementById('statFollowing').textContent = formatNumber(user.following_count);
+            document.getElementById('statPosts').textContent = formatNumber(user.posts_count);
+            document.getElementById('statLikes').textContent = formatNumber(user.likes_count);
+        }
+
+        async function loadTweets() {
+            if (isLoading || !hasMore) return;
+            
+            isLoading = true;
+            document.getElementById('loadingSentinel').style.display = 'flex';
+
+            try {
+                const response = await fetch(`/api/users/${userId}/tweets?skip=${skip}&limit=${limit}`);
+                const tweets = await response.json();
+
+                if (tweets.length < limit) {
+                    hasMore = false;
+                    document.getElementById('loadingSentinel').style.display = 'none';
+                    document.getElementById('noMoreTweets').style.display = 'block';
+                }
+
+                if (tweets.length > 0) {
+                    renderTweets(tweets);
+                    skip += tweets.length;
+                } else if (skip === 0) {
+                    document.getElementById('tweetsContainer').innerHTML = '<div class="no-more-tweets">No tweets found for this user.</div>';
+                    document.getElementById('noMoreTweets').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading tweets:', error);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        function renderTweets(tweets) {
+            const container = document.getElementById('tweetsContainer');
+            
+            tweets.forEach(tweet => {
+                const tweetCard = document.createElement('div');
+                tweetCard.className = 'tweet-card';
+                
+                const date = new Date(tweet.created_at);
+                const formattedDate = date.toLocaleString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                });
+
+                // Simple hashtag highlighting
+                let content = tweet.content.replace(/#(\w+)/g, '<span class="hashtag">#$1</span>');
+
+                tweetCard.innerHTML = `
+                    <div class="tweet-header">
+                        <div class="tweet-avatar" style="background-color: ${userData?.profile_color || '#667eea'}">
+                            ${userData?.profile_image_url ? `<img src="${userData.profile_image_url}">` : userData?.display_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="tweet-info">
+                            <span class="tweet-author-name">${userData?.display_name || 'User'}</span>
+                            <span class="tweet-meta">@${userData?.username || 'user'} · ${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="tweet-content">${content}</div>
+                    <div class="tweet-footer">
+                        <div class="tweet-stat">💬 ${tweet.comments_count || 0}</div>
+                        <div class="tweet-stat">🔁 ${tweet.retweets_count || 0}</div>
+                        <div class="tweet-stat">❤️ ${tweet.likes_count || 0}</div>
+                    </div>
+                `;
+                container.appendChild(tweetCard);
+            });
+        }
+
+        function setupInfiniteScroll() {
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && hasMore && !isLoading) {
+                    loadTweets();
+                }
+            }, {
+                rootMargin: '200px'
+            });
+
+            observer.observe(document.getElementById('loadingSentinel'));
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Tweet - Spyfind Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 0 0 40px 0;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+        }
+
+        .panel-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .panel-header h2 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .panel-header p {
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* Autocomplete styles */
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 100;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            margin-top: 5px;
+            border: 1px solid #eee;
+        }
+
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.2s;
+        }
+
+        .autocomplete-item:hover {
+            background: #f8f9fa;
+        }
+
+        .autocomplete-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .autocomplete-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .autocomplete-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .autocomplete-username {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* Hashtag List styles */
+        .hashtag-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .hashtag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            min-height: 40px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+        }
+
+        .hashtag-tag {
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .hashtag-remove {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .hashtag-remove:hover {
+            opacity: 1;
+        }
+
+        .selected-user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #eef2ff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #c7d2fe;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: #dcfce7;
+            color: #166534;
+            display: block;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-content">
+            <h1>Spyfind Admin</h1>
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="window.location.href='/'">🏠 Home</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin'">👥 Users</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
+                <button class="btn btn-primary" onclick="window.location.href='/admin/post-tweet'">📝 Post Tweet</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="panel-header">
+            <h2>📝 Post on behalf of user</h2>
+            <p>Create and publish a new tweet for any user in the system</p>
+        </div>
+
+        <div id="statusMsg" class="message"></div>
+
+        <div class="form-group">
+            <label for="userSearch">Search User (Username or Name)</label>
+            <input type="text" id="userSearch" placeholder="Type name or username..." autocomplete="off">
+            <div id="autocompleteResults" class="autocomplete-results"></div>
+            <div id="selectedUser" style="display: none;">
+                <div class="selected-user-badge">
+                    <div class="autocomplete-avatar" id="selectedUserAvatar">?</div>
+                    <div class="autocomplete-info">
+                        <span class="autocomplete-name" id="selectedUserName"></span>
+                        <span class="autocomplete-username" id="selectedUserHandle"></span>
+                    </div>
+                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.7rem;" onclick="clearUser()">Remove</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="tweetContent">Tweet Content</label>
+            <textarea id="tweetContent" placeholder="What's happening?"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="hashtagInput">Add Hashtags (Comma separated)</label>
+            <div class="hashtag-input-container">
+                <input type="text" id="hashtagInput" placeholder="trending, spyfind, alert...">
+                <button class="btn btn-primary" onclick="addHashtags()">Add</button>
+            </div>
+            <div id="hashtagList" class="hashtag-list">
+                <!-- Tags will be listed here -->
+            </div>
+        </div>
+
+        <button id="postBtn" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 10px;" onclick="postTweet()">
+            🚀 POST TWEET
+        </button>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div style="text-align: center;">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; font-weight: 600;">Publishing tweet... Please wait.</p>
+        </div>
+    </div>
+
+    <script>
+        let selectedUserId = null;
+        let hashtags = [];
+
+        // --- User Autocomplete Logic ---
+        const userSearch = document.getElementById('userSearch');
+        const resultsBox = document.getElementById('autocompleteResults');
+
+        async function performUserSearch(query) {
+            if (query.length < 2) {
+                resultsBox.style.display = 'none';
+                return;
+            }
+
+            resultsBox.innerHTML = '<div style="padding: 15px; color: #666; font-size: 0.9rem;">Searching...</div>';
+            resultsBox.style.display = 'block';
+
+            try {
+                const response = await fetch(`/admin/users/search?query=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error('Search failed');
+                
+                const users = await response.json();
+
+                if (users && users.length > 0) {
+                    resultsBox.innerHTML = users.map(user => {
+                        const avatarColor = user.profile_color || '#667eea';
+                        return `
+                            <div class="autocomplete-item" onclick="selectUser(${user.id}, '${user.display_name.replace(/'/g, "'")}', '${user.username}', '${avatarColor}')">
+                                <div class="autocomplete-avatar" style="background-color: ${avatarColor}">
+                                    ${(user.display_name || '?').charAt(0).toUpperCase()}
+                                </div>
+                                <div class="autocomplete-info">
+                                    <span class="autocomplete-name">${user.display_name}</span>
+                                    <span class="autocomplete-username">@${user.username}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    resultsBox.innerHTML = '<div style="padding: 15px; color: #666; font-size: 0.9rem;">No users found.</div>';
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                resultsBox.innerHTML = '<div style="padding: 15px; color: #991b1b; font-size: 0.9rem;">Error loading users.</div>';
+            }
+        }
+
+        userSearch.addEventListener('input', (e) => {
+            performUserSearch(e.target.value.trim());
+        });
+
+        function selectUser(id, name, username, color) {
+            selectedUserId = id;
+            document.getElementById('selectedUserName').textContent = name;
+            document.getElementById('selectedUserHandle').textContent = `@${username}`;
+            document.getElementById('selectedUserAvatar').style.backgroundColor = color;
+            document.getElementById('selectedUserAvatar').textContent = name.charAt(0).toUpperCase();
+            
+            document.getElementById('selectedUser').style.display = 'block';
+            userSearch.style.display = 'none';
+            resultsBox.style.display = 'none';
+        }
+
+        function clearUser() {
+            selectedUserId = null;
+            userSearch.value = '';
+            userSearch.style.display = 'block';
+            document.getElementById('selectedUser').style.display = 'none';
+        }
+
+        // --- Hashtag Management ---
+        const hashtagInput = document.getElementById('hashtagInput');
+        const hashtagList = document.getElementById('hashtagList');
+
+        hashtagInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addHashtags();
+            }
+        });
+
+        function addHashtags() {
+            const val = hashtagInput.value.trim();
+            if (!val) return;
+
+            const newTags = val.split(',').map(t => t.trim().replace(/^#/, '')).filter(t => t && !hashtags.includes(t));
+            hashtags = [...hashtags, ...newTags];
+            hashtagInput.value = '';
+            renderHashtags();
+        }
+
+        function removeHashtag(tag) {
+            hashtags = hashtags.filter(t => t !== tag);
+            renderHashtags();
+        }
+
+        function renderHashtags() {
+            if (hashtags.length === 0) {
+                hashtagList.innerHTML = '<p style="color: #999; font-size: 0.9rem; padding: 5px;">No hashtags added yet...</p>';
+                return;
+            }
+
+            hashtagList.innerHTML = hashtags.map(tag => `
+                <div class="hashtag-tag">
+                    #${tag}
+                    <span class="hashtag-remove" onclick="removeHashtag('${tag}')">×</span>
+                </div>
+            `).join('');
+        }
+
+        // --- Post Process ---
+        async function postTweet() {
+            let content = document.getElementById('tweetContent').value.trim();
+
+            if (!selectedUserId) {
+                showMessage('Please select a user first.', 'error');
+                return;
+            }
+
+            if (!content && hashtags.length === 0) {
+                showMessage('Please enter tweet content or hashtags.', 'error');
+                return;
+            }
+
+            // Append hashtags to content if they exist
+            if (hashtags.length > 0) {
+                const hashtagString = hashtags.map(h => '#' + h).join(' ');
+                content = content ? `${content} ${hashtagString}` : hashtagString;
+            }
+
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+
+            try {
+                const response = await fetch('/api/tweets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        author_id: selectedUserId,
+                        content: content
+                    })
+                });
+
+                if (response.ok) {
+                    showMessage('Tweet posted successfully!', 'success');
+                    document.getElementById('tweetContent').value = '';
+                    hashtags = [];
+                    renderHashtags();
+                } else {
+                    const data = await response.json();
+                    showMessage(data.detail || 'Failed to post tweet.', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error or server unavailable.', 'error');
+                console.error(error);
+            } finally {
+                overlay.style.display = 'none';
+            }
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('statusMsg');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (e.target !== userSearch && e.target !== resultsBox) {
+                resultsBox.style.display = 'none';
+            }
+        });
+
+        // Initial render
+        renderHashtags();
+    </script>
+</body>
+</html>

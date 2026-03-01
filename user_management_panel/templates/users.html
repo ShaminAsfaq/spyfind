@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management Panel - Spyfind</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 0 0 40px 0;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-edit {
+            background: #ffc107;
+            color: #000;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-edit:hover {
+            background: #e0a800;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+
+        .btn-view {
+            background: #17a2b8;
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .btn-view:hover {
+            background: #138496;
+        }
+
+        .stats {
+            padding: 20px 30px;
+            background: #f1f3f5;
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .stat-card {
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-card .label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+        }
+
+        .table-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: white;
+            margin-right: 10px;
+            vertical-align: middle;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .table-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .profile-view-modal .modal-content {
+            max-width: 700px;
+        }
+
+        .profile-header-view {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: cover;
+            background-position: center;
+            color: white;
+            border-radius: 12px 12px 0 0;
+            margin: -30px -30px 15px -30px;
+            position: relative;
+        }
+
+        .profile-header-view::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px 12px 0 0;
+            z-index: 1;
+        }
+
+        .profile-top-section {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .profile-avatar-view {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            border: 3px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            flex-shrink: 0;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            background-color: #667eea;
+        }
+
+        .profile-avatar-view img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-name-view {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .profile-username-view {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .profile-stats-compact {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        .stat-compact {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+        }
+
+        .stat-compact-number {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .stat-compact-label {
+            font-size: 0.75rem;
+            opacity: 0.85;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .detail-row {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .detail-row.full-width {
+            grid-column: span 2;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            color: #212529;
+            word-break: break-word;
+            font-size: 0.95rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-box-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-box-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-content">
+            <h1>Spyfind Admin</h1>
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="window.location.href='/'">🏠 Home</button>
+                <button class="btn btn-primary" onclick="window.location.href='/admin'">👥 Users</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post Tweet</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>👥 User Management Panel</h1>
+            <p>Manage all users in the Spyfind system</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalUsers">-</div>
+                <div class="label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="displayedUsers">-</div>
+                <div class="label">Displayed</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Search by username or display name...">
+            </div>
+            <button class="btn btn-primary" onclick="openCreateModal()">➕ Add New User</button>
+            <button class="btn btn-secondary" onclick="loadUsers()">🔄 Refresh</button>
+        </div>
+
+        <div class="content">
+            <div id="message"></div>
+            <div id="loadingIndicator" class="loading">Loading users...</div>
+            <div class="table-container" id="tableContainer" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Display Name</th>
+                            <th>Followers</th>
+                            <th>Following</th>
+                            <th>Posts</th>
+                            <th>Location</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                <button class="btn btn-secondary" onclick="previousPage()" id="prevBtn">← Previous</button>
+                <span id="pageInfo">Page 1</span>
+                <button class="btn btn-secondary" onclick="nextPage()" id="nextBtn">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit User Modal -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New User</h2>
+            </div>
+            <form id="userForm" onsubmit="saveUser(event)">
+                <input type="hidden" id="userId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="username">Username *</label>
+                        <input type="text" id="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="displayName">Display Name *</label>
+                        <input type="text" id="displayName" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="bio">Bio</label>
+                    <textarea id="bio"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <input type="text" id="location">
+                    </div>
+                    <div class="form-group">
+                        <label for="url">URL</label>
+                        <input type="url" id="url">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="followersCount">Followers Count</label>
+                        <input type="number" id="followersCount" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="followingCount">Following Count</label>
+                        <input type="number" id="followingCount" value="0" min="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="postsCount">Posts Count</label>
+                        <input type="number" id="postsCount" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="likesCount">Likes Count</label>
+                        <input type="number" id="likesCount" value="0" min="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="listedCount">Listed Count</label>
+                        <input type="number" id="listedCount" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="retweetsCount">Retweets Count</label>
+                        <input type="number" id="retweetsCount" value="0" min="0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="profileImageUrl">Profile Image URL</label>
+                        <input type="url" id="profileImageUrl" placeholder="https://example.com/avatar.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="profileBannerUrl">Banner Image URL</label>
+                        <input type="url" id="profileBannerUrl" placeholder="https://example.com/banner.jpg">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="profileColor">Profile Color</label>
+                        <input type="color" id="profileColor" value="#1da1f2">
+                    </div>
+                    <div class="form-group">
+                        <label for="bannerColor">Banner Color</label>
+                        <input type="color" id="bannerColor" value="#ffffff">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Profile Modal -->
+    <div class="modal profile-view-modal" id="profileModal">
+        <div class="modal-content">
+            <div class="profile-header-view">
+                <div class="profile-top-section">
+                    <div class="profile-avatar-view" id="viewAvatar"></div>
+                    <div class="profile-info-section">
+                        <div class="profile-name-view" id="viewName"></div>
+                        <div class="profile-username-view" id="viewUsername"></div>
+                        <div class="profile-stats-compact">
+                            <div class="stat-compact">
+                                <div class="stat-compact-number" id="viewFollowers">0</div>
+                                <div class="stat-compact-label">Followers</div>
+                            </div>
+                            <div class="stat-compact">
+                                <div class="stat-compact-number" id="viewFollowing">0</div>
+                                <div class="stat-compact-label">Following</div>
+                            </div>
+                            <div class="stat-compact">
+                                <div class="stat-compact-number" id="viewPosts">0</div>
+                                <div class="stat-compact-label">Posts</div>
+                            </div>
+                            <div class="stat-compact">
+                                <div class="stat-compact-number" id="viewLikes">0</div>
+                                <div class="stat-compact-label">Likes</div>
+                            </div>
+                            <div class="stat-compact">
+                                <div class="stat-compact-number" id="viewListed">0</div>
+                                <div class="stat-compact-label">Listed</div>
+                            </div>
+                            <div class="stat-compact">
+                                <div class="stat-compact-number" id="viewRetweets">0</div>
+                                <div class="stat-compact-label">Retweets</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-details">
+                <div class="detail-row">
+                    <div class="detail-label">User ID</div>
+                    <div class="detail-value" id="viewId"></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Location</div>
+                    <div class="detail-value" id="viewLocation"></div>
+                </div>
+                <div class="detail-row full-width">
+                    <div class="detail-label">Bio</div>
+                    <div class="detail-value" id="viewBio"></div>
+                </div>
+                <div class="detail-row full-width">
+                    <div class="detail-label">URL</div>
+                    <div class="detail-value" id="viewUrl"></div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Profile Color</div>
+                    <div class="detail-value" style="display: flex; align-items: center;">
+                        <span id="viewProfileColorBox" style="display: inline-block; width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ddd; margin-right: 8px;"></span>
+                        <span id="viewProfileColor" style="font-family: monospace; font-weight: 600;"></span>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Banner Color</div>
+                    <div class="detail-value" style="display: flex; align-items: center;">
+                        <span id="viewBannerColorBox" style="display: inline-block; width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ddd; margin-right: 8px;"></span>
+                        <span id="viewBannerColor" style="font-family: monospace; font-weight: 600;"></span>
+                    </div>
+                </div>
+                <div class="detail-row full-width">
+                    <div class="detail-label">Created At</div>
+                    <div class="detail-value" id="viewCreatedAt"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <a id="goToProfileBtn" href="#" target="_blank" class="btn btn-primary" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    🚀 Go to Profile
+                </a>
+                <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/admin/users';
+        let currentPage = 1;
+        let pageSize = 50;
+        let searchQuery = '';
+        let totalUsers = 0;
+
+        // Load users on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsers();
+            loadTotalCount();
+
+            // Search functionality with debounce
+            let searchTimeout;
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    searchQuery = e.target.value;
+                    currentPage = 1;
+                    loadUsers();
+                }, 500);
+            });
+        });
+
+        async function loadUsers() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const tableContainer = document.getElementById('tableContainer');
+
+            loadingIndicator.style.display = 'block';
+            tableContainer.style.display = 'none';
+
+            try {
+                const skip = (currentPage - 1) * pageSize;
+                const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+                const url = `${API_BASE}/?skip=${skip}&limit=${pageSize}${searchParam}`;
+
+                console.log('Fetching users from:', url);
+                const response = await fetch(url);
+
+                console.log('Response status:', response.status);
+                console.log('Response statusText:', response.statusText);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    throw new Error(`Failed to load users (${response.status}): ${errorText}`);
+                }
+
+                const users = await response.json();
+                console.log('Loaded users:', users.length);
+                displayUsers(users);
+
+                loadingIndicator.style.display = 'none';
+                tableContainer.style.display = 'block';
+
+                document.getElementById('displayedUsers').textContent = users.length;
+                document.getElementById('pageInfo').textContent = `Page ${currentPage}`;
+
+                // Disable next button if we got fewer results than page size
+                document.getElementById('nextBtn').disabled = users.length < pageSize;
+            } catch (error) {
+                console.error('Error in loadUsers:', error);
+                showMessage('Error loading users: ' + error.message, 'error');
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        async function loadTotalCount() {
+            try {
+                const response = await fetch(`${API_BASE}/count`);
+                const data = await response.json();
+                totalUsers = data.total;
+                document.getElementById('totalUsers').textContent = totalUsers;
+            } catch (error) {
+                console.error('Error loading total count:', error);
+            }
+        }
+
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                const firstLetter = user.display_name.charAt(0).toUpperCase();
+                const avatarColor = user.profile_color || '#1da1f2';
+                
+                let avatarHtml = '';
+                if (user.profile_image_url) {
+                    avatarHtml = `<div class="table-avatar" style="background-color: ${avatarColor}">
+                        <img src="${user.profile_image_url}" loading="lazy" onerror="this.style.display='none'; this.parentElement.textContent='${firstLetter}'">
+                    </div>`;
+                } else {
+                    avatarHtml = `<div class="table-avatar" style="background-color: ${avatarColor}">${firstLetter}</div>`;
+                }
+
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>
+                        <div style="display: flex; align-items: center;">
+                            ${avatarHtml}
+                            <strong>@${user.username}</strong>
+                        </div>
+                    </td>
+                    <td>${user.display_name}</td>
+                    <td><span class="user-badge">${user.followers_count || 0}</span></td>
+                    <td><span class="user-badge" style="background:#f1f8e9; color:#2e7d32;">${user.following_count || 0}</span></td>
+                    <td><span class="user-badge" style="background:#fff3e0; color:#ef6c00;">${user.posts_count || 0}</span></td>
+                    <td>${user.location || '-'}</td>
+                    <td class="actions">
+                        <button class="btn btn-view" onclick="viewUserProfile(${user.id})">👁️ View</button>
+                        <button class="btn btn-edit" onclick="editUser(${user.id})">✏️ Edit</button>
+                        <button class="btn btn-delete" onclick="deleteUser(${user.id}, '${user.username}')">🗑️ Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = 'Add New User';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('profileColor').value = '#1da1f2';
+            document.getElementById('bannerColor').value = '#ffffff';
+            document.getElementById('userModal').classList.add('active');
+        }
+
+        async function editUser(userId) {
+            try {
+                const response = await fetch(`${API_BASE}/${userId}`);
+                if (!response.ok) throw new Error('Failed to load user');
+
+                const user = await response.json();
+
+                document.getElementById('modalTitle').textContent = 'Edit User';
+                document.getElementById('userId').value = user.id;
+                document.getElementById('username').value = user.username;
+                document.getElementById('displayName').value = user.display_name;
+                document.getElementById('bio').value = user.bio || '';
+                document.getElementById('location').value = user.location || '';
+                document.getElementById('url').value = user.url || '';
+                document.getElementById('followersCount').value = user.followers_count || 0;
+                document.getElementById('followingCount').value = user.following_count || 0;
+                document.getElementById('postsCount').value = user.posts_count || 0;
+                document.getElementById('likesCount').value = user.likes_count || 0;
+                document.getElementById('listedCount').value = user.listed_count || 0;
+                document.getElementById('retweetsCount').value = user.retweets_count || 0;
+                document.getElementById('profileColor').value = user.profile_color || '#1da1f2';
+                document.getElementById('bannerColor').value = user.banner_color || '#ffffff';
+                document.getElementById('profileImageUrl').value = user.profile_image_url || '';
+                document.getElementById('profileBannerUrl').value = user.profile_banner_url || '';
+
+                document.getElementById('userModal').classList.add('active');
+            } catch (error) {
+                showMessage('Error loading user: ' + error.message, 'error');
+            }
+        }
+
+        async function saveUser(event) {
+            event.preventDefault();
+
+            const userId = document.getElementById('userId').value;
+            const userData = {
+                username: document.getElementById('username').value,
+                display_name: document.getElementById('displayName').value,
+                bio: document.getElementById('bio').value,
+                location: document.getElementById('location').value,
+                url: document.getElementById('url').value,
+                followers_count: parseInt(document.getElementById('followersCount').value) || 0,
+                following_count: parseInt(document.getElementById('followingCount').value) || 0,
+                posts_count: parseInt(document.getElementById('postsCount').value) || 0,
+                likes_count: parseInt(document.getElementById('likesCount').value) || 0,
+                listed_count: parseInt(document.getElementById('listedCount').value) || 0,
+                retweets_count: parseInt(document.getElementById('retweetsCount').value) || 0,
+                profile_color: document.getElementById('profileColor').value,
+                banner_color: document.getElementById('bannerColor').value,
+                profile_image_url: document.getElementById('profileImageUrl').value,
+                profile_banner_url: document.getElementById('profileBannerUrl').value
+            };
+
+            try {
+                const url = userId ? `${API_BASE}/${userId}` : API_BASE;
+                const method = userId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to save user');
+                }
+
+                closeModal();
+                loadUsers();
+                loadTotalCount();
+                showMessage(userId ? 'User updated successfully!' : 'User created successfully!', 'success');
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteUser(userId, username) {
+            if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete user');
+
+                loadUsers();
+                loadTotalCount();
+                showMessage('User deleted successfully!', 'success');
+            } catch (error) {
+                showMessage('Error deleting user: ' + error.message, 'error');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('userModal').classList.remove('active');
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadUsers();
+            }
+        }
+
+        function nextPage() {
+            currentPage++;
+            loadUsers();
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        async function viewUserProfile(userId) {
+            try {
+                const response = await fetch(`${API_BASE}/${userId}`);
+                if (!response.ok) throw new Error('Failed to load user');
+
+                const user = await response.json();
+
+                // Set avatar and banner
+                const avatarView = document.getElementById('viewAvatar');
+                const headerView = document.querySelector('.profile-header-view');
+                const firstLetter = user.display_name.charAt(0).toUpperCase();
+                const avatarColor = user.profile_color || '#667eea';
+
+                // Reset and set avatar
+                avatarView.innerHTML = '';
+                avatarView.style.backgroundColor = avatarColor;
+                if (user.profile_image_url) {
+                    avatarView.innerHTML = `<img src="${user.profile_image_url}" onerror="this.parentElement.innerHTML='${firstLetter}'; this.parentElement.style.backgroundColor='${avatarColor}';">`;
+                } else {
+                    avatarView.textContent = firstLetter;
+                }
+
+                // Set banner
+                if (user.profile_banner_url) {
+                    headerView.style.backgroundImage = `url(${user.profile_banner_url})`;
+                    headerView.style.backgroundSize = 'cover';
+                    headerView.style.backgroundPosition = 'center';
+                } else {
+                    const bannerColor = user.banner_color || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    headerView.style.backgroundImage = bannerColor.startsWith('#') ? 'none' : bannerColor;
+                    if (bannerColor.startsWith('#')) headerView.style.backgroundColor = bannerColor;
+                }
+
+                // Set basic info
+                document.getElementById('viewName').textContent = user.display_name;
+                document.getElementById('viewUsername').textContent = `@${user.username}`;
+                document.getElementById('viewId').textContent = user.id;
+                document.getElementById('viewBio').textContent = user.bio || 'No bio provided';
+                document.getElementById('viewLocation').textContent = user.location || 'No location provided';
+
+                // Set URL
+                const urlElement = document.getElementById('viewUrl');
+                if (user.url) {
+                    urlElement.innerHTML = `<a href="${user.url}" target="_blank" style="color: #667eea; text-decoration: none;">${user.url}</a>`;
+                } else {
+                    urlElement.textContent = 'No URL provided';
+                }
+
+                // Set colors
+                let pColor = user.profile_color || '#1da1f2';
+                let bColor = user.banner_color || '#ffffff';
+                
+                // Ensure # prefix
+                if (pColor && !pColor.startsWith('#')) pColor = '#' + pColor;
+                if (bColor && !bColor.startsWith('#')) bColor = '#' + bColor;
+                
+                console.log('Setting Profile Color:', pColor);
+                console.log('Setting Banner Color:', bColor);
+
+                const pBox = document.getElementById('viewProfileColorBox');
+                const bBox = document.getElementById('viewBannerColorBox');
+
+                document.getElementById('viewProfileColor').textContent = pColor;
+                pBox.style.backgroundColor = pColor;
+                
+                document.getElementById('viewBannerColor').textContent = bColor;
+                bBox.style.backgroundColor = bColor;
+
+                // Set created date
+                const createdDate = new Date(user.created_at);
+                document.getElementById('viewCreatedAt').textContent = createdDate.toLocaleString();
+
+                // Set stats
+                document.getElementById('viewFollowers').textContent = user.followers_count || 0;
+                document.getElementById('viewFollowing').textContent = user.following_count || 0;
+                document.getElementById('viewPosts').textContent = user.posts_count || 0;
+                document.getElementById('viewLikes').textContent = user.likes_count || 0;
+                document.getElementById('viewListed').textContent = user.listed_count || 0;
+                document.getElementById('viewRetweets').textContent = user.retweets_count || 0;
+
+                // Show modal
+                document.getElementById('goToProfileBtn').href = `/profile/${user.id}`;
+                document.getElementById('profileModal').classList.add('active');
+            } catch (error) {
+                showMessage('Error loading user profile: ' + error.message, 'error');
+            }
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('userModal').addEventListener('click', (e) => {
+            if (e.target.id === 'userModal') {
+                closeModal();
+            }
+        });
+
+        document.getElementById('profileModal').addEventListener('click', (e) => {
+            if (e.target.id === 'profileModal') {
+                closeProfileModal();
+            }
+        });
+    </script>
+</body>
+</html>

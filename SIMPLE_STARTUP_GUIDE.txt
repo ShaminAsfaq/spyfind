@@ -1,0 +1,111 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║                    SPYFIND SERVER - SIMPLE STARTUP GUIDE                  ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+✅ SERVER IS CURRENTLY RUNNING AT:  http://localhost:8000
+
+═════════════════════════════════════════════════════════════════════════════
+
+THE 3 COMMANDS TO REMEMBER:
+
+  1. Go to the folder:
+     $ cd /Users/islamkastero/spyfind
+
+  2. Turn on Python tools:
+     $ source venv/bin/activate
+
+  3. Start the server:
+     $ python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+═════════════════════════════════════════════════════════════════════════════
+
+THAT'S IT! Then:
+
+  → Open browser
+  → Go to: http://localhost:8000
+  → Use the website!
+
+═════════════════════════════════════════════════════════════════════════════
+
+TO STOP THE SERVER:
+
+  In the terminal: Press Ctrl + C
+
+═════════════════════════════════════════════════════════════════════════════
+
+WHAT I DID WHEN I RAN IT:
+
+  ✓ Step 1: Checked if a server was already running
+    (Used: ps aux | grep uvicorn)
+
+  ✓ Step 2: Found it was running with PID 62152
+    (Process: uvicorn app.main:app)
+
+  ✓ Step 3: Verified it's healthy
+    (Used: curl http://localhost:8000/health)
+    (Got back: {"status":"healthy"})
+
+═════════════════════════════════════════════════════════════════════════════
+
+FULL COMMAND FOR COPY & PASTE:
+
+source venv/bin/activate && python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+(Just paste this in terminal and press Enter!)
+
+═════════════════════════════════════════════════════════════════════════════
+
+WHAT YOU'LL SEE WHEN IT'S RUNNING:
+
+  INFO:     Started server process [XXXXX]
+  INFO:     Waiting for application startup.
+  INFO:     Application startup complete.
+  INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+
+═════════════════════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING:
+
+Problem: Terminal says "No such file or directory"
+  → Fix: Make sure you're in the spyfind folder
+  → Try: cd /Users/islamkastero/spyfind
+
+Problem: (venv) doesn't show up
+  → Fix: You might not have activated the environment
+  → Try: source venv/bin/activate
+
+Problem: "Address already in use"
+  → Fix: Use a different port
+  → Try: python3 -m uvicorn app.main:app --port 8001
+  → Then visit: http://localhost:8001
+
+═════════════════════════════════════════════════════════════════════════════
+
+QUICK FAQ:
+
+Q: Is the server running right now?
+A: Yes! Currently at http://localhost:8000
+
+Q: What if I close the terminal?
+A: Server stops. Start it again with the 3 commands.
+
+Q: Can I use my phone to access it?
+A: Yes! Find your computer IP and use http://[YOUR_IP]:8000
+
+Q: Do I need to do anything else?
+A: Nope! Just type the 3 commands and you're good.
+
+═════════════════════════════════════════════════════════════════════════════
+
+REMEMBER:
+
+  3 Commands = Server Running
+  Ctrl + C = Server Stops
+  http://localhost:8000 = Access the website
+
+═════════════════════════════════════════════════════════════════════════════
+
+That's all you need to know to run Spyfind!
+

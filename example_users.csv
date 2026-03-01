@@ -1,0 +1,6 @@
+username,display_name,bio,location,url,followers_count,following_count,posts_count,likes_count,listed_count,profile_color,banner_color
+bot_hunter_99,Bot Hunter,Detecting fake accounts since 2020,New York,https://bothunter.com,5000,1200,850,25000,150,#e74c3c,#fff3e0
+ai_researcher,Dr. Sarah Chen,AI/ML Researcher | Bot Detection Expert,San Francisco,https://sarahchen.ai,8500,2000,1200,45000,320,#3498db,#e8f5ff
+security_pro,SecPro Labs,Cybersecurity & Threat Analysis,London,,12000,800,2500,60000,450,#9b59b6,#f3e5f5
+data_scientist,Alex Morgan,Data Science | ML Engineering,Seattle,https://alexmorgan.io,3200,1500,600,18000,95,#2ecc71,#e8f8f5
+spam_fighter,Spam Fighter,Fighting spam and bots 24/7,Remote,,7800,900,3200,38000,280,#f39c12,#fce4ec

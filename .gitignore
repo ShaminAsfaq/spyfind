@@ -1,0 +1,39 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Data
+data_source/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.env
+.env.local
+*.log
+
+# Project specific
+*.pyc

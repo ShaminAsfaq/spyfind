@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spyfind - Bot Detection Testing Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .navbar {
+            background-color: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1da1f2;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #1da1f2;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1a91da;
+        }
+
+        .btn-secondary {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            transition: max-width 0.5s ease;
+        }
+
+        /* Fluid Layout States */
+        .home-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            align-items: start;
+            transition: all 0.5s ease;
+        }
+
+        .has-results .container {
+            max-width: 1300px;
+        }
+
+        .has-results .home-grid {
+            grid-template-columns: 1fr 350px;
+        }
+
+        .search-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .top-hashtags-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.5s ease;
+            height: fit-content;
+            position: sticky;
+            top: 5rem;
+        }
+
+        .has-results .top-hashtags-section {
+            margin-bottom: 0;
+        }
+
+        .hashtags-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            transition: grid-template-columns 0.5s ease;
+        }
+
+        .has-results .hashtags-list {
+            grid-template-columns: 1fr;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .search-input-group input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .search-input-group input:focus {
+            outline: none;
+            border-color: #1da1f2;
+            box-shadow: 0 0 0 3px rgba(29,161,242,0.1);
+        }
+
+        .results-section {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .no-results {
+            background: white;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 8px;
+            color: #666;
+        }
+
+        .tweet-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .tweet-card:hover {
+            border-color: #1da1f2;
+            box-shadow: 0 2px 8px rgba(29,161,242,0.15);
+        }
+
+        .tweet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .tweet-author-info {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .tweet-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .tweet-author {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tweet-author-name {
+            font-weight: 700;
+            color: #000;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .tweet-author-name:hover {
+            text-decoration: underline;
+            color: #1da1f2;
+        }
+
+        .tweet-author-handle {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .tweet-time {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .tweet-content {
+            margin: 1rem 0;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .hashtag-link {
+            color: #1da1f2;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .hashtag-link:hover {
+            text-decoration: underline;
+        }
+
+        .tweet-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .stat-item:hover {
+            color: #1da1f2;
+        }
+
+        .like-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .like-btn:hover {
+            color: #e74c3c;
+        }
+
+        .repost-indicator {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .comments-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .comments-header {
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .comment-item {
+            background: #f9f9f9;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+        }
+
+        .comment-author {
+            font-weight: 700;
+            color: #1da1f2;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .comment-content {
+            color: #333;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .comment-time {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 0.3rem;
+        }
+
+        .top-hashtags-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .hashtags-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .hashtags-tab {
+            padding: 0.5rem 0.75rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .hashtags-tab.active {
+            color: #1da1f2;
+            border-bottom-color: #1da1f2;
+        }
+
+        .hashtags-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 0.75rem;
+            transition: all 0.5s ease;
+        }
+
+        .has-results .hashtags-list {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .hashtag-card {
+            background: #f9f9f9;
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            border-left: 3px solid #1da1f2;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .hashtag-card:hover {
+            background: #f0f7ff;
+            transform: translateX(4px);
+        }
+
+        .hashtag-card-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1da1f2;
+            margin-bottom: 0.1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .hashtag-card-count {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            animation: slideIn 0.2s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #1da1f2;
+            box-shadow: 0 0 0 3px rgba(29,161,242,0.1);
+        }
+
+        .profile-section {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .profile-banner {
+            height: 150px;
+            width: 100%;
+        }
+
+        .profile-header {
+            padding: 0 2rem 1.5rem 2rem;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 1.5rem;
+            position: relative;
+            margin-top: -50px;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid white;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .profile-username {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .profile-handle {
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .profile-bio {
+            margin-bottom: 1rem;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .profile-url {
+            color: #1da1f2;
+            text-decoration: none;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .profile-url:hover {
+            text-decoration: underline;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            padding: 0 2rem 2rem 2rem;
+        }
+
+        .stat-item {
+            padding: 0.75rem;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1da1f2;
+        }
+
+        .error {
+            background-color: #ffe6e6;
+            color: #d32f2f;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background-color: #e8f5e9;
+            color: #388e3c;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f0f0f0;
+            border-top: 3px solid #1da1f2;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-link {
+            color: #1da1f2;
+            text-decoration: none;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-content">
+            <h1>Spyfind</h1>
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="showHome()">🏠 Home</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin'">👥 Users</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post Tweet</button>
+                <button class="btn btn-primary" onclick="openTweetModal()">New Roar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Home/Search View -->
+        <div id="homeView">
+            <div class="search-section">
+                <div class="search-input-group">
+                    <input type="text" id="searchInput" placeholder="Search hashtags or users..." autocomplete="off">
+                    <button class="btn btn-primary" onclick="performSearch()">Search</button>
+                </div>
+            </div>
+
+            <div class="home-grid">
+                <div id="resultsContainer" class="results-section">
+                    <div class="no-results">Search for hashtags or users to get started</div>
+                </div>
+
+                <!-- Top Hashtags Section -->
+                <div class="top-hashtags-section">
+                    <h3 style="margin-bottom: 1rem;">Popular Hashtags</h3>
+                    <div class="hashtags-tabs">
+                        <button class="hashtags-tab active" onclick="switchHashtagTab('tweets')">Most Roars</button>
+                        <button class="hashtags-tab" onclick="switchHashtagTab('date')">Latest</button>
+                    </div>
+                    <div id="hashtagsContainer" class="hashtags-list">
+                        <div style="text-align: center; width: 100%;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile View -->
+        <div id="profileView" style="display: none;">
+            <a class="back-link" onclick="showHome()">← Back to Search</a>
+            <div class="profile-section">
+                <div class="profile-banner" id="profileBanner"></div>
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profileAvatar"></div>
+                    <div class="profile-username" id="profileName"></div>
+                    <div class="profile-handle" id="profileHandle"></div>
+                    <div class="profile-bio" id="profileBio"></div>
+                    <a class="profile-url" id="profileUrl" target="_blank" style="display: none;"></a>
+                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        📅 Joined <span id="profileCreated"></span>
+                    </div>
+                    <div id="profileLocation" style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"></div>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Posts</div>
+                        <div class="stat-value" id="profilePosts">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Following</div>
+                        <div class="stat-value" id="profileFollowing">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Followers</div>
+                        <div class="stat-value" id="profileFollowers">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Likes</div>
+                        <div class="stat-value" id="profileLikes">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Listed</div>
+                        <div class="stat-value" id="profileListed">0</div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h3 style="margin-bottom: 1rem;">Roars & Reposts</h3>
+                <div id="profileTweetsContainer" class="results-section"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Roar Creation Modal -->
+    <div id="tweetModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create a Roar</h2>
+                <button class="close-btn" onclick="closeTweetModal()">×</button>
+            </div>
+            <div id="tweetError" class="error" style="display: none;"></div>
+            <form onsubmit="submitTweet(event)">
+                <div class="form-group">
+                    <label>Select User</label>
+                    <select id="authorSelect" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+                        <option value="">Loading users...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Roar Content (include #hashtags)</label>
+                    <textarea id="tweetContent" placeholder="What's happening?!" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Roar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        // ===== UTILITY FUNCTIONS =====
+        async function fetchAPI(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    headers: { 'Content-Type': 'application/json' },
+                    ...options
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'API request failed');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            if (days > 7) {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+            } else if (days > 0) {
+                return `${days}d`;
+            } else if (hours > 0) {
+                return `${hours}h`;
+            } else if (minutes > 0) {
+                return `${minutes}m`;
+            } else {
+                return 'now';
+            }
+        }
+
+        function linkifyHashtags(text) {
+            return text.replace(/#(\w+)/g, '<a class="hashtag-link" onclick="searchHashtagByName(\'$1\');">#$1</a>');
+        }
+
+        function showError(message, containerId = 'homeView') {
+            const container = document.getElementById(containerId);
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            container.insertBefore(errorDiv, container.firstChild);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        function showSuccess(message, containerId = 'homeView') {
+            const container = document.getElementById(containerId);
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            container.insertBefore(successDiv, container.firstChild);
+            setTimeout(() => successDiv.remove(), 5000);
+        }
+
+        // ===== VIEW MANAGEMENT =====
+        function showHome() {
+            document.getElementById('homeView').style.display = 'block';
+            document.getElementById('profileView').style.display = 'none';
+            
+            // Manage fluid layout state
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                document.body.classList.remove('has-results');
+            } else {
+                document.body.classList.add('has-results');
+            }
+        }
+
+        function showProfile(userId) {
+            document.getElementById('homeView').style.display = 'none';
+            document.getElementById('profileView').style.display = 'block';
+            loadUserProfile(userId);
+        }
+
+        // ===== SEARCH FUNCTIONALITY =====
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                document.getElementById('resultsContainer').innerHTML = '<div class="no-results">Enter a hashtag or username to search</div>';
+                document.body.classList.remove('has-results');
+                return;
+            }
+
+            // Trigger fluid layout change
+            document.body.classList.add('has-results');
+
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = '<div class="loading"><div class="spinner"></div>Searching...</div>';
+
+            try {
+                // Search for both hashtags and users
+                const hashtags = await fetchAPI(`/hashtags/search/${encodeURIComponent(query)}`);
+                const users = await fetchAPI(`/users`);
+                const matchedUsers = users.filter(u =>
+                    u.username.toLowerCase().includes(query.toLowerCase()) ||
+                    u.display_name.toLowerCase().includes(query.toLowerCase())
+                );
+
+                if (hashtags.length === 0 && matchedUsers.length === 0) {
+                    resultsContainer.innerHTML = `<div class="no-results">No results found for "${query}"</div>`;
+                    return;
+                }
+
+                let html = '';
+
+                // Display matched users first
+                if (matchedUsers.length > 0) {
+                    html += '<div><h3 style="margin: 1.5rem 0 1rem; font-size: 1.3rem;">👤 Users (' + matchedUsers.length + ')</h3>';
+                    html += '<div style="display: grid; gap: 1rem; margin-bottom: 2rem;">';
+                    for (const user of matchedUsers) {
+                        const firstLetter = (user.display_name || user.username || '?').charAt(0).toUpperCase();
+                        const avatarColor = user.profile_color || '#1da1f2';
+                        html += `
+                            <a href="/profile/${user.id}" target="_blank" class="tweet-card" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;">
+                                <div style="display: flex; gap: 1rem; align-items: center;">
+                                    <div class="tweet-avatar" style="background-color: ${avatarColor}; border: 1px solid rgba(0,0,0,0.1);">
+                                        ${user.profile_image_url ? `<img src="${user.profile_image_url}" onerror="this.style.display='none'; this.parentElement.textContent='${firstLetter}'">` : firstLetter}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 700; font-size: 1.1rem; color: #000;">${user.display_name}</div>
+                                        <div style="color: #666;">@${user.username}</div>
+                                        <div style="color: #666; font-size: 0.9rem; margin-top: 0.3rem;">${user.bio || 'No bio'}</div>
+                                        <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                                            <span><strong>${user.followers_count}</strong> Followers</span>
+                                            <span><strong>${user.posts_count}</strong> Posts</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        `;
+                    }
+                    html += '</div></div>';
+                }
+
+                // Display hashtag results
+                if (hashtags.length > 0) {
+                    for (const hashtag of hashtags) {
+                        const tweets = await fetchAPI(`/hashtags/${hashtag.id}`);
+                        html += `<div><h3 style="margin: 1.5rem 0 1rem; font-size: 1.3rem;">#${hashtag.name} (${tweets.tweets.length} roars)</h3>`;
+
+                        if (tweets.tweets.length === 0) {
+                            html += '<div class="no-results">No roars with this hashtag</div>';
+                        } else {
+                            html += tweets.tweets.map(tweet => createTweetHTML(tweet)).join('');
+                        }
+                        html += '</div>';
+                    }
+                }
+
+                resultsContainer.innerHTML = html;
+            } catch (error) {
+                showError(`Error searching: ${error.message}`);
+            }
+        }
+
+        function searchHashtagByName(hashtag) {
+            // Switch to home view if not already there
+            showHome();
+            // Set the search input and perform search
+            document.getElementById('searchInput').value = hashtag;
+            performSearch();
+        }
+
+        // ===== TWEET FUNCTIONS =====
+        function createTweetHTML(tweet, isRepost = false, reposter = null) {
+            const firstLetter = tweet.author.display_name.charAt(0).toUpperCase();
+            const avatarColor = tweet.author.profile_color || '#1da1f2';
+
+            let repostIndicator = '';
+            if (isRepost && reposter) {
+                repostIndicator = `
+                    <div class="repost-indicator">
+                        <span>🔄</span>
+                        <span>${reposter.display_name} reposted</span>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="tweet-card" id="tweet-${tweet.id}">
+                    ${repostIndicator}
+                    <div class="tweet-header">
+                        <div class="tweet-author-info">
+                            <a href="/profile/${tweet.author.id}" target="_blank" class="tweet-avatar" style="background-color: ${avatarColor}; text-decoration: none; border: 1px solid rgba(0,0,0,0.1);">
+                                ${tweet.author.profile_image_url ? `<img src="${tweet.author.profile_image_url}" onerror="this.style.display='none'; this.parentElement.textContent='${firstLetter}'">` : firstLetter}
+                            </a>
+                            <div class="tweet-author">
+                                <a href="/profile/${tweet.author.id}" target="_blank" class="tweet-author-name">${tweet.author.display_name}</a>
+                                <span class="tweet-author-handle">@${tweet.author.username}</span>
+                            </div>
+                        </div>
+                        <span class="tweet-time">${formatDate(tweet.created_at)}</span>
+                    </div>
+                    <div class="tweet-content">${linkifyHashtags(tweet.content)}</div>
+                    <div class="tweet-stats">
+                        <div class="stat-item">
+                            <span>❤</span>
+                            <span>${tweet.likes_count}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>🔄</span>
+                            <span>${tweet.retweets_count}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>💬</span>
+                            <span>${tweet.comments_count || 0}</span>
+                        </div>
+                        <button class="like-btn" onclick="likeTweet(${tweet.id})" style="margin-left: auto;">Like</button>
+                        <button class="like-btn" onclick="toggleComments(${tweet.id})">Comments</button>
+                    </div>
+                    <div id="comments-${tweet.id}" class="comments-section" style="display: none;"></div>
+                </div>
+            `;
+        }
+
+        async function likeTweet(tweetId) {
+            try {
+                await fetchAPI(`/tweets/${tweetId}/like`, { method: 'POST' });
+                // Refresh the current view
+                const query = document.getElementById('searchInput').value.trim();
+                if (query) {
+                    performSearch();
+                }
+            } catch (error) {
+                showError(`Error liking tweet: ${error.message}`);
+            }
+        }
+
+        // ===== PROFILE FUNCTIONS =====
+        async function loadUserProfile(userId) {
+            try {
+                const user = await fetchAPI(`/users/${userId}`);
+                const tweets = await fetchAPI(`/tweets?skip=0&limit=100`);
+                const reposts = await fetchAPI(`/reposts/user/${userId}`);
+
+                // Set banner and avatar
+                const firstLetter = user.display_name.charAt(0).toUpperCase();
+                document.getElementById('profileBanner').style.backgroundColor = user.banner_color || '#ffffff';
+                document.getElementById('profileAvatar').style.backgroundColor = user.profile_color || '#1da1f2';
+                document.getElementById('profileAvatar').textContent = firstLetter;
+
+                // Set profile information
+                document.getElementById('profileName').textContent = user.display_name;
+                document.getElementById('profileHandle').textContent = `@${user.username}`;
+                document.getElementById('profileBio').textContent = user.bio || 'No bio';
+
+                // Set URL if exists
+                const urlElement = document.getElementById('profileUrl');
+                if (user.url) {
+                    urlElement.href = user.url;
+                    urlElement.textContent = user.url;
+                    urlElement.style.display = 'inline-block';
+                } else {
+                    urlElement.style.display = 'none';
+                }
+
+                document.getElementById('profileLocation').textContent = user.location ? `📍 ${user.location}` : '';
+                document.getElementById('profileCreated').textContent = formatDate(user.created_at);
+
+                // Set stats
+                document.getElementById('profilePosts').textContent = user.posts_count || 0;
+                document.getElementById('profileFollowing').textContent = user.following_count || 0;
+                document.getElementById('profileFollowers').textContent = user.followers_count || 0;
+                document.getElementById('profileLikes').textContent = user.likes_count || 0;
+                document.getElementById('profileListed').textContent = user.listed_count || 0;
+
+                // Combine tweets and reposts
+                const userTweets = tweets.filter(t => t.author.id === userId);
+                const allPosts = [
+                    ...userTweets.map(t => ({ type: 'tweet', data: t, created_at: t.created_at })),
+                    ...reposts.map(r => ({ type: 'repost', data: r, created_at: r.created_at }))
+                ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                const container = document.getElementById('profileTweetsContainer');
+                if (allPosts.length === 0) {
+                    container.innerHTML = '<div class="no-results">No roars yet</div>';
+                } else {
+                    container.innerHTML = allPosts.map(post => {
+                        if (post.type === 'tweet') {
+                            return createTweetHTML(post.data);
+                        } else {
+                            return createTweetHTML(post.data.original_tweet, true, user);
+                        }
+                    }).join('');
+                }
+            } catch (error) {
+                showError(`Error loading profile: ${error.message}`);
+            }
+        }
+
+        // ===== TWEET MODAL =====
+        async function openTweetModal() {
+            document.getElementById('tweetModal').style.display = 'block';
+
+            try {
+                const users = await fetchAPI('/users');
+                const select = document.getElementById('authorSelect');
+                select.innerHTML = users.map(user =>
+                    `<option value="${user.id}">@${user.username} (${user.display_name})</option>`
+                ).join('');
+            } catch (error) {
+                showError('Error loading users for tweet creation');
+            }
+        }
+
+        function closeTweetModal() {
+            document.getElementById('tweetModal').style.display = 'none';
+            document.getElementById('tweetContent').value = '';
+            document.getElementById('tweetError').style.display = 'none';
+        }
+
+        async function submitTweet(event) {
+            event.preventDefault();
+            const authorId = document.getElementById('authorSelect').value;
+            const content = document.getElementById('tweetContent').value.trim();
+
+            if (!authorId || !content) {
+                document.getElementById('tweetError').style.display = 'block';
+                document.getElementById('tweetError').textContent = 'Please select a user and enter content';
+                return;
+            }
+
+            try {
+                await fetchAPI('/tweets', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        author_id: parseInt(authorId),
+                        content: content
+                    })
+                });
+                closeTweetModal();
+                showSuccess('Roar created successfully!');
+                const query = document.getElementById('searchInput').value.trim();
+                if (query) {
+                    performSearch();
+                }
+            } catch (error) {
+                document.getElementById('tweetError').style.display = 'block';
+                document.getElementById('tweetError').textContent = `Error creating roar: ${error.message}`;
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('tweetModal');
+            if (event.target == modal) {
+                closeTweetModal();
+            }
+        }
+
+        // ===== TOP HASHTAGS FUNCTIONS =====
+        let currentHashtagTab = 'tweets';
+
+        async function loadTopHashtags() {
+            try {
+                let endpoint = currentHashtagTab === 'tweets' ? '/hashtags/top/tweets' : '/hashtags/top/date';
+                const response = await fetchAPI(endpoint);
+                displayTopHashtags(response.top_hashtags);
+            } catch (error) {
+                console.error('Error loading top hashtags:', error);
+            }
+        }
+
+        function displayTopHashtags(hashtags) {
+            const container = document.getElementById('hashtagsContainer');
+            if (hashtags.length === 0) {
+                container.innerHTML = '<div style="text-align: center; width: 100%; color: #666;">No hashtags yet</div>';
+                return;
+            }
+            container.innerHTML = hashtags.map(h => `
+                <div class="hashtag-card" onclick="searchHashtagByName('${h.name}')">
+                    <div class="hashtag-card-name">#${h.name}</div>
+                    <div class="hashtag-card-count">${h.tweet_count} roar${h.tweet_count !== 1 ? 's' : ''}</div>
+                </div>
+            `).join('');
+        }
+
+        function switchHashtagTab(tab) {
+            currentHashtagTab = tab;
+
+            // Update button styles
+            document.querySelectorAll('.hashtags-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Load new data
+            loadTopHashtags();
+        }
+
+        // ===== COMMENTS FUNCTIONS =====
+        async function toggleComments(tweetId) {
+            const commentsDiv = document.getElementById(`comments-${tweetId}`);
+
+            if (commentsDiv.style.display === 'none') {
+                // Load and show comments
+                try {
+                    const comments = await fetchAPI(`/comments/tweet/${tweetId}`);
+
+                    if (comments.length === 0) {
+                        commentsDiv.innerHTML = '<div class="comments-header">Comments</div><div style="color: #666; font-style: italic;">No comments yet</div>';
+                    } else {
+                        let html = '<div class="comments-header">Comments (' + comments.length + ')</div>';
+                        html += comments.map(comment => `
+                            <div class="comment-item">
+                                <div class="comment-author">@${comment.user.username}</div>
+                                <div class="comment-content">${comment.content}</div>
+                                <div class="comment-time">${formatDate(comment.created_at)}</div>
+                            </div>
+                        `).join('');
+                        commentsDiv.innerHTML = html;
+                    }
+                    commentsDiv.style.display = 'block';
+                } catch (error) {
+                    showError(`Error loading comments: ${error.message}`);
+                }
+            } else {
+                // Hide comments
+                commentsDiv.style.display = 'none';
+            }
+        }
+
+        // Allow Enter key in search
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+
+            // Load top hashtags on page load
+            loadTopHashtags();
+        });
+    </script>
+</body>
+</html>
