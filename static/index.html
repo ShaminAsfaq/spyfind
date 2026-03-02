@@ -635,6 +635,7 @@
                 <button class="btn btn-secondary" onclick="window.location.href='/admin'">👥 Users</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post Tweet</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/bot-detector'">🤖 Bot Detector</button>
                 <button class="btn btn-primary" onclick="openTweetModal()">New Roar</button>
             </div>
         </div>
@@ -742,6 +743,15 @@
     <script>
         const API_BASE = '/api';
 
+        // Pagination state
+        let currentHashtagId = null;
+        let currentSkip = 0;
+        const LIMIT = 20;
+        let totalTweets = 0;
+        let isLoadingMore = false;
+        let hasMore = false;
+        let observer = null;
+
         // ===== UTILITY FUNCTIONS =====
         async function fetchAPI(endpoint, options = {}) {
             try {
@@ -825,12 +835,22 @@
         }
 
         // ===== SEARCH FUNCTIONALITY =====
-        async function performSearch() {
-            const query = document.getElementById('searchInput').value.trim();
+        async function performSearch(exactHashtag = null) {
+            const query = exactHashtag || document.getElementById('searchInput').value.trim();
             if (!query) {
                 document.getElementById('resultsContainer').innerHTML = '<div class="no-results">Enter a hashtag or username to search</div>';
                 document.body.classList.remove('has-results');
                 return;
+            }
+
+            // Reset pagination state
+            currentHashtagId = null;
+            currentSkip = 0;
+            totalTweets = 0;
+            isLoadingMore = false;
+            hasMore = false;
+            if (observer) {
+                observer.disconnect();
             }
 
             // Trigger fluid layout change
@@ -841,12 +861,17 @@
 
             try {
                 // Search for both hashtags and users
-                const hashtags = await fetchAPI(`/hashtags/search/${encodeURIComponent(query)}`);
-                const users = await fetchAPI(`/users`);
-                const matchedUsers = users.filter(u =>
-                    u.username.toLowerCase().includes(query.toLowerCase()) ||
-                    u.display_name.toLowerCase().includes(query.toLowerCase())
-                );
+                const exactParam = exactHashtag ? '?exact=true' : '';
+                const hashtags = await fetchAPI(`/hashtags/search/${encodeURIComponent(query)}${exactParam}`);
+                
+                let matchedUsers = [];
+                if (!exactHashtag) {
+                    const users = await fetchAPI(`/users`);
+                    matchedUsers = users.filter(u =>
+                        (u.username && u.username.toLowerCase().includes(query.toLowerCase())) ||
+                        (u.display_name && u.display_name.toLowerCase().includes(query.toLowerCase()))
+                    );
+                }
 
                 if (hashtags.length === 0 && matchedUsers.length === 0) {
                     resultsContainer.innerHTML = `<div class="no-results">No results found for "${query}"</div>`;
@@ -857,10 +882,11 @@
 
                 // Display matched users first
                 if (matchedUsers.length > 0) {
-                    html += '<div><h3 style="margin: 1.5rem 0 1rem; font-size: 1.3rem;">👤 Users (' + matchedUsers.length + ')</h3>';
+                    html += '<div id="usersResults"><h3 style="margin: 1.5rem 0 1rem; font-size: 1.3rem;">👤 Users (' + matchedUsers.length + ')</h3>';
                     html += '<div style="display: grid; gap: 1rem; margin-bottom: 2rem;">';
                     for (const user of matchedUsers) {
-                        const firstLetter = (user.display_name || user.username || '?').charAt(0).toUpperCase();
+                        const displayName = user.display_name || user.username || 'Unknown';
+                        const firstLetter = displayName.charAt(0).toUpperCase();
                         const avatarColor = user.profile_color || '#1da1f2';
                         html += `
                             <a href="/profile/${user.id}" target="_blank" class="tweet-card" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;">
@@ -869,7 +895,7 @@
                                         ${user.profile_image_url ? `<img src="${user.profile_image_url}" onerror="this.style.display='none'; this.parentElement.textContent='${firstLetter}'">` : firstLetter}
                                     </div>
                                     <div>
-                                        <div style="font-weight: 700; font-size: 1.1rem; color: #000;">${user.display_name}</div>
+                                        <div style="font-weight: 700; font-size: 1.1rem; color: #000;">${displayName}</div>
                                         <div style="color: #666;">@${user.username}</div>
                                         <div style="color: #666; font-size: 0.9rem; margin-top: 0.3rem;">${user.bio || 'No bio'}</div>
                                         <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
@@ -886,20 +912,56 @@
 
                 // Display hashtag results
                 if (hashtags.length > 0) {
-                    for (const hashtag of hashtags) {
-                        const tweets = await fetchAPI(`/hashtags/${hashtag.id}`);
-                        html += `<div><h3 style="margin: 1.5rem 0 1rem; font-size: 1.3rem;">#${hashtag.name} (${tweets.tweets.length} roars)</h3>`;
+                    // We'll focus on the first hashtag for infinite scroll if it's an exact search
+                    if (exactHashtag && hashtags.length === 1) {
+                        const hashtag = hashtags[0];
+                        const summary = await fetchAPI(`/hashtags/${hashtag.id}/summary`);
+                        const tweetsData = await fetchAPI(`/hashtags/${hashtag.id}/tweets?skip=0&limit=${LIMIT}`);
+                        
+                        currentHashtagId = hashtag.id;
+                        totalTweets = summary.tweet_count;
+                        currentSkip = LIMIT;
+                        hasMore = totalTweets > LIMIT;
 
-                        if (tweets.tweets.length === 0) {
+                        html += `<div id="hashtagResults"><h3 style="margin: 1.5rem 0 1rem; font-size: 1.3rem;">#${hashtag.name} (${totalTweets} roars)</h3>`;
+                        html += '<div id="tweetsList">';
+                        if (tweetsData.tweets.length === 0) {
                             html += '<div class="no-results">No roars with this hashtag</div>';
                         } else {
-                            html += tweets.tweets.map(tweet => createTweetHTML(tweet)).join('');
+                            html += tweetsData.tweets.map(tweet => createTweetHTML(tweet)).join('');
                         }
                         html += '</div>';
+                        
+                        if (hasMore) {
+                            html += '<div id="infiniteScrollSentinel" style="height: 20px; margin-top: 20px;"></div>';
+                            html += '<div id="loadMoreSpinner" class="loading" style="display: none;"><div class="spinner"></div>Loading more roars...</div>';
+                        }
+                        html += '</div>';
+                    } else {
+                        // Multiple hashtags (substring search)
+                        for (const hashtag of hashtags) {
+                            const summary = await fetchAPI(`/hashtags/${hashtag.id}/summary`);
+                            const tweetsData = await fetchAPI(`/hashtags/${hashtag.id}/tweets?skip=0&limit=5`);
+                            
+                            html += `<div><h3 style="margin: 1.5rem 0 1rem; font-size: 1.3rem;">#${hashtag.name} (${summary.tweet_count} roars)</h3>`;
+                            if (tweetsData.tweets.length === 0) {
+                                html += '<div class="no-results">No roars with this hashtag</div>';
+                            } else {
+                                html += tweetsData.tweets.map(tweet => createTweetHTML(tweet)).join('');
+                                if (summary.tweet_count > 5) {
+                                    html += `<div style="text-align: center; margin: 1rem 0;"><button class="btn btn-secondary" onclick="searchHashtagByName('${hashtag.name}')">View all ${summary.tweet_count} roars</button></div>`;
+                                }
+                            }
+                            html += '</div>';
+                        }
                     }
                 }
 
                 resultsContainer.innerHTML = html;
+
+                if (hasMore && currentHashtagId) {
+                    setupInfiniteScroll();
+                }
             } catch (error) {
                 showError(`Error searching: ${error.message}`);
             }
@@ -908,9 +970,58 @@
         function searchHashtagByName(hashtag) {
             // Switch to home view if not already there
             showHome();
-            // Set the search input and perform search
-            document.getElementById('searchInput').value = hashtag;
-            performSearch();
+            // Set the search input and perform search with exact flag
+            document.getElementById('searchInput').value = hashtag.startsWith('#') ? hashtag : '#' + hashtag;
+            // Strip the # for the API call but tell it to use exact match
+            const tagName = hashtag.startsWith('#') ? hashtag.substring(1) : hashtag;
+            performSearch(tagName);
+        }
+
+        function setupInfiniteScroll() {
+            const sentinel = document.getElementById('infiniteScrollSentinel');
+            if (!sentinel) return;
+
+            observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && !isLoadingMore && hasMore) {
+                    loadMoreTweets();
+                }
+            }, { threshold: 0.1 });
+
+            observer.observe(sentinel);
+        }
+
+        async function loadMoreTweets() {
+            if (isLoadingMore || !hasMore || !currentHashtagId) return;
+
+            isLoadingMore = true;
+            const spinner = document.getElementById('loadMoreSpinner');
+            if (spinner) spinner.style.display = 'block';
+
+            try {
+                const data = await fetchAPI(`/hashtags/${currentHashtagId}/tweets?skip=${currentSkip}&limit=${LIMIT}`);
+                
+                if (data.tweets.length > 0) {
+                    const tweetsList = document.getElementById('tweetsList');
+                    const newTweetsHtml = data.tweets.map(tweet => createTweetHTML(tweet)).join('');
+                    tweetsList.insertAdjacentHTML('beforeend', newTweetsHtml);
+                    
+                    currentSkip += data.tweets.length;
+                    hasMore = currentSkip < totalTweets;
+                } else {
+                    hasMore = false;
+                }
+
+                if (!hasMore && spinner) {
+                    spinner.innerHTML = '<div style="color: #666; font-size: 0.9rem;">No more roars to load</div>';
+                } else if (spinner) {
+                    spinner.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading more tweets:', error);
+                if (spinner) spinner.style.display = 'none';
+            } finally {
+                isLoadingMore = false;
+            }
         }
 
         // ===== TWEET FUNCTIONS =====

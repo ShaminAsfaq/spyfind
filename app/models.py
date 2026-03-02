@@ -1,6 +1,6 @@
 """SQLAlchemy ORM Models for Spyfind."""
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, Table, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, Table, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -8,8 +8,8 @@ from app.database import Base
 tweet_hashtag_association = Table(
     'tweet_hashtag',
     Base.metadata,
-    Column('tweet_id', Integer, ForeignKey('tweets.id', ondelete='CASCADE')),
-    Column('hashtag_id', Integer, ForeignKey('hashtags.id', ondelete='CASCADE'))
+    Column('tweet_id', Integer, ForeignKey('tweets.id', ondelete='CASCADE'), index=True),
+    Column('hashtag_id', Integer, ForeignKey('hashtags.id', ondelete='CASCADE'), index=True)
 )
 
 
@@ -39,9 +39,26 @@ class User(Base):
     tweets = relationship("Tweet", back_populates="author", cascade="all, delete-orphan")
     reposts = relationship("Repost", back_populates="user", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
+    bot_status = relationship("BotDetection", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, username={self.username})>"
+
+
+class BotDetection(Base):
+    """Table to track if a user is a bot or not."""
+    __tablename__ = "bot_detections"
+
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+    is_bot = Column(Boolean, default=False, nullable=False)
+    source = Column(String, nullable=True)  # e.g., 'social_spambots_1'
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationship back to User
+    user = relationship("User", back_populates="bot_status")
+
+    def __repr__(self):
+        return f"<BotDetection(user_id={self.user_id}, is_bot={self.is_bot})>"
 
 
 class Hashtag(Base):
@@ -49,8 +66,9 @@ class Hashtag(Base):
     __tablename__ = "hashtags"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
+    name = Column(String(collation='BINARY'), unique=True, index=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    latest_tweet_id = Column(Integer, ForeignKey('tweets.id'), nullable=True, index=True)
 
     # Relationships
     tweets = relationship(
@@ -58,6 +76,7 @@ class Hashtag(Base):
         secondary=tweet_hashtag_association,
         back_populates="hashtags"
     )
+    latest_tweet = relationship("Tweet", foreign_keys=[latest_tweet_id], post_update=True)
 
     def __repr__(self):
         return f"<Hashtag(id={self.id}, name={self.name})>"

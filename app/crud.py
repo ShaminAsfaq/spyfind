@@ -4,7 +4,7 @@ import random
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models import User, Tweet, Hashtag, Repost, Comment
+from app.models import User, Tweet, Hashtag, Repost, Comment, BotDetection, tweet_hashtag_association
 from app.schemas import UserCreate, TweetCreate, RepostCreate, CommentCreate
 
 
@@ -66,6 +66,16 @@ def create_user(db: Session, user: UserCreate) -> User:
         profile_banner_url=user.profile_banner_url
     )
     db.add(db_user)
+    db.flush()
+
+    # Add bot detection entry (default to human for manual creation)
+    bot_status = BotDetection(
+        user_id=db_user.id,
+        is_bot=False,
+        source="manual_creation"
+    )
+    db.add(bot_status)
+
     db.commit()
     db.refresh(db_user)
     return db_user
@@ -82,8 +92,8 @@ def get_hashtag(db: Session, hashtag_id: int) -> Optional[Hashtag]:
 
 
 def get_hashtag_by_name(db: Session, name: str) -> Optional[Hashtag]:
-    """Get hashtag by name."""
-    return db.query(Hashtag).filter(func.lower(Hashtag.name) == func.lower(name)).first()
+    """Get hashtag by name (Case-Sensitive)."""
+    return db.query(Hashtag).filter(Hashtag.name == name).first()
 
 
 def get_hashtags(db: Session, skip: int = 0, limit: int = 100) -> List[Hashtag]:
@@ -105,11 +115,15 @@ def create_hashtag(db: Session, name: str) -> Hashtag:
     return db_hashtag
 
 
-def search_hashtags(db: Session, query: str) -> List[Hashtag]:
-    """Search hashtags by name (case-insensitive)."""
+def search_hashtags(db: Session, query: str, exact: bool = False) -> List[Hashtag]:
+    """Search hashtags by name (Case-Sensitive)."""
+    if exact:
+        return db.query(Hashtag).filter(
+            Hashtag.name == query
+        ).all()
     return db.query(Hashtag).filter(
-        Hashtag.name.ilike(f"%{query}%")
-    ).all()
+        Hashtag.name.like(f"%{query}%")
+    ).limit(50).all()
 
 
 def get_tweet(db: Session, tweet_id: int) -> Optional[Tweet]:
@@ -161,6 +175,8 @@ def create_tweet(db: Session, tweet: TweetCreate) -> Tweet:
         # Associate with tweet
         if hashtag not in db_tweet.hashtags:
             db_tweet.hashtags.append(hashtag)
+            # Optimization: Update the hashtag's latest_tweet_id
+            hashtag.latest_tweet_id = db_tweet.id
 
     db.commit()
     db.refresh(db_tweet)
@@ -214,6 +230,16 @@ def like_tweet(db: Session, tweet_id: int) -> Optional[Tweet]:
     return tweet
 
 
+def get_tweets_by_hashtag_paginated(db: Session, hashtag_id: int, skip: int = 0, limit: int = 20) -> List[Tweet]:
+    """Get tweets for a specific hashtag with pagination, ordered by latest first."""
+    return db.query(Tweet).join(Tweet.hashtags).filter(Hashtag.id == hashtag_id).order_by(Tweet.created_at.desc()).offset(skip).limit(limit).all()
+
+
+def count_tweets_by_hashtag(db: Session, hashtag_id: int) -> int:
+    """Count tweets for a specific hashtag."""
+    return db.query(Tweet).join(Tweet.hashtags).filter(Hashtag.id == hashtag_id).count()
+
+
 def get_tweets_by_hashtag(db: Session, hashtag_id: int) -> List[Tweet]:
     """Get all tweets for a specific hashtag."""
     hashtag = get_hashtag(db, hashtag_id)
@@ -225,18 +251,19 @@ def get_tweets_by_hashtag(db: Session, hashtag_id: int) -> List[Tweet]:
 def get_top_hashtags_by_tweets(db: Session, limit: int = 10) -> List[dict]:
     """Get hashtags sorted by number of tweets (most tweets first)."""
     from sqlalchemy import func as sql_func
-
+    
+    # Still use the association table for popularity, but it's now faster
     results = db.query(
         Hashtag.id,
         Hashtag.name,
         Hashtag.created_at,
-        sql_func.count(Tweet.id).label('tweet_count')
+        sql_func.count(tweet_hashtag_association.c.tweet_id).label('tweet_count')
     ).outerjoin(
-        Hashtag.tweets
+        tweet_hashtag_association, Hashtag.id == tweet_hashtag_association.c.hashtag_id
     ).group_by(
         Hashtag.id, Hashtag.name, Hashtag.created_at
     ).order_by(
-        sql_func.count(Tweet.id).desc()
+        sql_func.count(tweet_hashtag_association.c.tweet_id).desc()
     ).limit(limit).all()
 
     return [
@@ -251,18 +278,21 @@ def get_top_hashtags_by_tweets(db: Session, limit: int = 10) -> List[dict]:
 
 
 def get_top_hashtags_by_date(db: Session, limit: int = 10) -> List[dict]:
-    """Get hashtags sorted by creation date (newest first)."""
+    """Get hashtags sorted by the most recent tweet that used them (optimized)."""
+    from sqlalchemy import func as sql_func
+    
+    # Use the optimized latest_tweet_id column instead of complex joins
     results = db.query(
         Hashtag.id,
         Hashtag.name,
         Hashtag.created_at,
-        func.count(Tweet.id).label('tweet_count')
+        sql_func.count(tweet_hashtag_association.c.tweet_id).label('tweet_count')
     ).outerjoin(
-        Hashtag.tweets
+        tweet_hashtag_association, Hashtag.id == tweet_hashtag_association.c.hashtag_id
     ).group_by(
-        Hashtag.id, Hashtag.name, Hashtag.created_at
+        Hashtag.id, Hashtag.name, Hashtag.created_at, Hashtag.latest_tweet_id
     ).order_by(
-        Hashtag.created_at.desc()
+        Hashtag.latest_tweet_id.desc()
     ).limit(limit).all()
 
     return [

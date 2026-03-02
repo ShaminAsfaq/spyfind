@@ -95,5 +95,14 @@ def admin_post_tweet_page():
     return {"message": "Post tweet panel not found"}
 
 
+@app.get("/admin/bot-detector")
+def admin_bot_detector_page():
+    """Serve the bot detector panel."""
+    html_path = os.path.join(os.path.dirname(__file__), "..", "user_management_panel", "templates", "bot_detector.html")
+    if os.path.exists(html_path):
+        return FileResponse(html_path, media_type="text/html")
+    return {"message": "Bot detector panel not found"}
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

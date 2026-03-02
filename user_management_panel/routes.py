@@ -1,7 +1,7 @@
 """User Management Panel Routes."""
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 
 from app.database import get_db
@@ -9,52 +9,110 @@ from app.schemas import UserResponse, UserCreate
 from app import crud
 from app.models import User
 
+import joblib
+import pandas as pd
+import os
+
+import joblib
+import pandas as pd
+import os
+
 router = APIRouter(prefix="/admin/users", tags=["user-management"])
 
-class HashtagInjectionRequest(BaseModel):
-    user_id: int
-    hashtags: str
-    percentage: int = 20
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model", "bot_detector.pkl")
 
+def get_batch_predictions(users):
+    if not os.path.exists(MODEL_PATH) or not users:
+        return [None] * len(users)
+    try:
+        model = joblib.load(MODEL_PATH)
+        feature_data = []
+        for u in users:
+            statuses = u.posts_count or 0
+            followers = u.followers_count or 0
+            friends = u.following_count or 0
+            reputation = followers / (followers + friends + 1)
+            ratio = statuses / (followers + 1)
+            feature_data.append([statuses, followers, friends, reputation, ratio])
+        
+        feature_names = ['statuses_count', 'followers_count', 'friends_count', 'reputation', 'post_to_follower_ratio']
+        df = pd.DataFrame(feature_data, columns=feature_names)
+        return model.predict(df)
+    except:
+        return [None] * len(users)
 
-@router.get("/", response_model=List[UserResponse])
+from app.models import User, BotDetection
+
+@router.get("/")
 def get_all_users(
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(50, ge=1, le=500),
     search: str = Query(None),
+    status: str = Query(None), # 'all', 'human', 'bot'
     db: Session = Depends(get_db)
 ):
     """
-    Get all users with pagination and search.
-
-    - **skip**: Number of records to skip
-    - **limit**: Maximum number of records to return
-    - **search**: Search by username or display_name
+    Get users with pagination, search, and real status filtering.
     """
+    query = db.query(User).options(joinedload(User.bot_status))
+
+    # Apply search filter first
     if search:
-        users = db.query(User).filter(
+        query = query.filter(
             (User.username.ilike(f"%{search}%")) |
             (User.display_name.ilike(f"%{search}%"))
-        ).offset(skip).limit(limit).all()
-    else:
-        users = crud.get_users(db, skip=skip, limit=limit)
+        )
 
-    # Ensure None values are converted to 0 for counts
+    # Apply status filter (Ground Truth)
+    if status == 'bot':
+        query = query.join(User.bot_status).filter(BotDetection.is_bot == True)
+    elif status == 'human':
+        query = query.join(User.bot_status).filter(BotDetection.is_bot == False)
+
+    users = query.offset(skip).limit(limit).all()
+
+    results = []
     for user in users:
-        user.followers_count = user.followers_count or 0
-        user.following_count = user.following_count or 0
-        user.posts_count = user.posts_count or 0
-        user.likes_count = user.likes_count or 0
-        user.listed_count = user.listed_count or 0
-        user.retweets_count = user.retweets_count or 0
+        # Get real status from database
+        is_bot = user.bot_status.is_bot if user.bot_status else False
+        
+        results.append({
+            "id": user.id,
+            "username": user.username,
+            "display_name": user.display_name,
+            "profile_image_url": user.profile_image_url,
+            "profile_color": user.profile_color,
+            "followers_count": user.followers_count or 0,
+            "following_count": user.following_count or 0,
+            "posts_count": user.posts_count or 0,
+            "location": user.location,
+            "real_status": "BOT" if is_bot else "HUMAN"
+        })
 
-    return users
+    return results
 
 
 @router.get("/count")
-def get_users_count(db: Session = Depends(get_db)):
-    """Get total count of users."""
-    count = db.query(User).count()
+def get_users_count(
+    search: str = Query(None),
+    status: str = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get count of users matching current filters."""
+    query = db.query(User)
+    
+    if search:
+        query = query.filter(
+            (User.username.ilike(f"%{search}%")) |
+            (User.display_name.ilike(f"%{search}%"))
+        )
+        
+    if status == 'bot':
+        query = query.join(User.bot_status).filter(BotDetection.is_bot == True)
+    elif status == 'human':
+        query = query.join(User.bot_status).filter(BotDetection.is_bot == False)
+        
+    count = query.count()
     return {"total": count}
 
 
@@ -90,7 +148,7 @@ def search_users_for_hashtag(query: str = Query(None), db: Session = Depends(get
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     """Get a specific user by ID."""
-    user = crud.get_user(db, user_id)
+    user = db.query(User).options(joinedload(User.bot_status)).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user

@@ -90,6 +90,26 @@
             min-width: 250px;
         }
 
+        .filter-box {
+            min-width: 150px;
+        }
+
+        .filter-box select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .filter-box select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
         .search-box input {
             width: 100%;
             padding: 12px 20px;
@@ -105,10 +125,10 @@
         }
 
         .btn {
-            padding: 12px 24px;
+            padding: 8px 16px;
             border: none;
             border-radius: 8px;
-            font-size: 1em;
+            font-size: 0.95em;
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
@@ -155,6 +175,65 @@
 
         .btn-view:hover {
             background: #138496;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            margin-left: 5px;
+            color: #6c757d;
+            transition: color 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            border-radius: 4px;
+            vertical-align: middle;
+        }
+
+        .copy-btn:hover {
+            color: #1da1f2;
+            background-color: rgba(29, 161, 242, 0.1);
+        }
+
+        .copy-btn:active {
+            transform: scale(0.9);
+        }
+
+        .copy-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Tooltip for copy success */
+        .tooltip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 80px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -40px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        .tooltip.show .tooltiptext {
+            visibility: visible;
+            opacity: 1;
         }
 
         .stats {
@@ -543,6 +622,7 @@
                 <button class="btn btn-primary" onclick="window.location.href='/admin'">👥 Users</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post Tweet</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/bot-detector'">🤖 Bot Detector</button>
             </div>
         </div>
     </div>
@@ -563,12 +643,18 @@
                 <div class="label">Displayed</div>
             </div>
         </div>
-
         <div class="controls">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 Search by username or display name...">
+                <input type="text" id="searchInput" placeholder="Search by username or display name...">
             </div>
-            <button class="btn btn-primary" onclick="openCreateModal()">➕ Add New User</button>
+            <div class="filter-box">
+                <select id="statusFilter">
+                    <option value="all">All Users</option>
+                    <option value="human">👤 Humans Only</option>
+                    <option value="bot">🤖 Bots Only</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="openCreateModal()">+ Add New User</button>
             <button class="btn btn-secondary" onclick="loadUsers()">🔄 Refresh</button>
         </div>
 
@@ -582,6 +668,7 @@
                             <th>ID</th>
                             <th>Username</th>
                             <th>Display Name</th>
+                            <th>Status</th>
                             <th>Followers</th>
                             <th>Following</th>
                             <th>Posts</th>
@@ -746,6 +833,10 @@
                     <div class="detail-value" id="viewId"></div>
                 </div>
                 <div class="detail-row">
+                    <div class="detail-label">Account Type</div>
+                    <div class="detail-value" id="viewStatus"></div>
+                </div>
+                <div class="detail-row">
                     <div class="detail-label">Location</div>
                     <div class="detail-value" id="viewLocation"></div>
                 </div>
@@ -791,12 +882,33 @@
         let currentPage = 1;
         let pageSize = 50;
         let searchQuery = '';
+        let filterStatus = 'all';
+
+        function copyToClipboard(text, btnElement) {
+            navigator.clipboard.writeText(text).then(() => {
+                const tooltip = btnElement.parentElement;
+                tooltip.classList.add('show');
+                setTimeout(() => {
+                    tooltip.classList.remove('show');
+                }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
         let totalUsers = 0;
 
         // Load users on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadUsers();
             loadTotalCount();
+
+            // Status filter
+            document.getElementById('statusFilter').addEventListener('change', (e) => {
+                filterStatus = e.target.value;
+                currentPage = 1;
+                loadUsers();
+                loadTotalCount();
+            });
 
             // Search functionality with debounce
             let searchTimeout;
@@ -806,6 +918,7 @@
                     searchQuery = e.target.value;
                     currentPage = 1;
                     loadUsers();
+                    loadTotalCount();
                 }, 500);
             });
         });
@@ -820,7 +933,8 @@
             try {
                 const skip = (currentPage - 1) * pageSize;
                 const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
-                const url = `${API_BASE}/?skip=${skip}&limit=${pageSize}${searchParam}`;
+                const statusParam = filterStatus !== 'all' ? `&status=${filterStatus}` : '';
+                const url = `${API_BASE}/?skip=${skip}&limit=${pageSize}${searchParam}${statusParam}`;
 
                 console.log('Fetching users from:', url);
                 const response = await fetch(url);
@@ -855,7 +969,9 @@
 
         async function loadTotalCount() {
             try {
-                const response = await fetch(`${API_BASE}/count`);
+                const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+                const statusParam = filterStatus !== 'all' ? `&status=${filterStatus}` : '';
+                const response = await fetch(`${API_BASE}/count?${searchParam}${statusParam}`);
                 const data = await response.json();
                 totalUsers = data.total;
                 document.getElementById('totalUsers').textContent = totalUsers;
@@ -870,27 +986,38 @@
 
             users.forEach(user => {
                 const row = document.createElement('tr');
-                const firstLetter = user.display_name.charAt(0).toUpperCase();
+                const firstLetter = (user.display_name || user.username || 'U').charAt(0).toUpperCase();
                 const avatarColor = user.profile_color || '#1da1f2';
                 
-                let avatarHtml = '';
-                if (user.profile_image_url) {
-                    avatarHtml = `<div class="table-avatar" style="background-color: ${avatarColor}">
-                        <img src="${user.profile_image_url}" loading="lazy" onerror="this.style.display='none'; this.parentElement.textContent='${firstLetter}'">
-                    </div>`;
-                } else {
-                    avatarHtml = `<div class="table-avatar" style="background-color: ${avatarColor}">${firstLetter}</div>`;
+                const avatarHtml = user.profile_image_url 
+                    ? `<div class="table-avatar" style="background-color: ${avatarColor}"><img src="${user.profile_image_url}" loading="lazy" onerror="this.style.display='none'; this.parentElement.textContent='${firstLetter}'"></div>`
+                    : `<div class="table-avatar" style="background-color: ${avatarColor}">${firstLetter}</div>`;
+
+                const status = user.real_status;
+                let statusIcon = '👤';
+                let statusTitle = 'Human';
+                
+                if (status === 'BOT') {
+                    statusIcon = '🤖';
+                    statusTitle = 'Bot';
                 }
 
                 row.innerHTML = `
                     <td>${user.id}</td>
                     <td>
-                        <div style="display: flex; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
                             ${avatarHtml}
                             <strong>@${user.username}</strong>
+                            <span class="tooltip">
+                                <button class="copy-btn" onclick="copyToClipboard('${user.username}', this)" title="Copy username">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                                <span class="tooltiptext">Copied!</span>
+                            </span>
                         </div>
                     </td>
                     <td>${user.display_name}</td>
+                    <td style="text-align: center; font-size: 1.2rem;" title="${statusTitle}">${statusIcon}</td>
                     <td><span class="user-badge">${user.followers_count || 0}</span></td>
                     <td><span class="user-badge" style="background:#f1f8e9; color:#2e7d32;">${user.following_count || 0}</span></td>
                     <td><span class="user-badge" style="background:#fff3e0; color:#ef6c00;">${user.posts_count || 0}</span></td>
@@ -1079,6 +1206,13 @@
                 document.getElementById('viewId').textContent = user.id;
                 document.getElementById('viewBio').textContent = user.bio || 'No bio provided';
                 document.getElementById('viewLocation').textContent = user.location || 'No location provided';
+
+                // Set status
+                const isBot = user.bot_status ? user.bot_status.is_bot : false;
+                const statusHtml = isBot 
+                    ? `<span class="user-badge" style="background:#ffebee; color:#c62828; border: 1px solid #ffcdd2;">🤖 Bot</span>`
+                    : `<span class="user-badge" style="background:#e8f5e9; color:#2e7d32; border: 1px solid #c8e6c9;">👤 Human</span>`;
+                document.getElementById('viewStatus').innerHTML = statusHtml;
 
                 // Set URL
                 const urlElement = document.getElementById('viewUrl');

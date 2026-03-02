@@ -2,12 +2,15 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+import os
+import joblib
+import pandas as pd
 
 from app.database import get_db
 from app.schemas import (
     UserResponse, UserCreate,
-    HashtagResponse, HashtagDetailResponse,
-    TweetResponse, TweetCreate,
+    HashtagResponse, HashtagDetailResponse, HashtagSummaryResponse,
+    TweetResponse, TweetCreate, TweetListResponse,
     RepostResponse, RepostCreate,
     CommentResponse, CommentCreate
 )
@@ -57,6 +60,56 @@ def get_user_tweets(user_id: int, skip: int = Query(0), limit: int = Query(20), 
     return tweets
 
 
+@router.get("/predict/{username}")
+def predict_bot(username: str, db: Session = Depends(get_db)):
+    """Predict if a user is a bot using the ML model."""
+    user = crud.get_user_by_username(db, username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    model_path = os.path.join(os.path.dirname(__file__), "..", "model", "bot_detector.pkl")
+    if not os.path.exists(model_path):
+        raise HTTPException(status_code=500, detail="ML model not found")
+
+    try:
+        model = joblib.load(model_path)
+        
+        # Calculate features
+        statuses = user.posts_count or 0
+        followers = user.followers_count or 0
+        friends = user.following_count or 0
+        reputation = followers / (followers + friends + 1)
+        post_to_follower_ratio = statuses / (followers + 1)
+        
+        feature_names = ['statuses_count', 'followers_count', 'friends_count', 'reputation', 'post_to_follower_ratio']
+        df = pd.DataFrame([[statuses, followers, friends, reputation, post_to_follower_ratio]], columns=feature_names)
+        
+        prediction = bool(model.predict(df)[0])
+        
+        confidence = None
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(df)
+            confidence = int(max(probs[0]) * 100)
+
+        return {
+            "user_id": user.id,
+            "username": user.username,
+            "display_name": user.display_name,
+            "prediction": "BOT" if prediction else "HUMAN",
+            "is_bot": prediction,
+            "confidence": confidence,
+            "features": {
+                "statuses_count": statuses,
+                "followers_count": followers,
+                "friends_count": friends,
+                "reputation": round(reputation, 4),
+                "post_to_follower_ratio": round(post_to_follower_ratio, 4)
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
+
 # ============================================================================
 # HASHTAG ENDPOINTS
 # ============================================================================
@@ -69,19 +122,10 @@ def list_hashtags(skip: int = Query(0), limit: int = Query(100), db: Session = D
 
 
 @router.get("/hashtags/search/{query}", response_model=List[HashtagResponse])
-def search_hashtags(query: str, db: Session = Depends(get_db)):
+def search_hashtags(query: str, exact: bool = Query(False), db: Session = Depends(get_db)):
     """Search hashtags by name."""
-    hashtags = crud.search_hashtags(db, query)
+    hashtags = crud.search_hashtags(db, query, exact=exact)
     return hashtags
-
-
-@router.get("/hashtags/{hashtag_id}", response_model=HashtagDetailResponse)
-def get_hashtag(hashtag_id: int, db: Session = Depends(get_db)):
-    """Get hashtag details with associated tweets."""
-    hashtag = crud.get_hashtag(db, hashtag_id)
-    if not hashtag:
-        raise HTTPException(status_code=404, detail="Hashtag not found")
-    return hashtag
 
 
 @router.get("/hashtags/top/tweets")
@@ -96,6 +140,56 @@ def get_top_hashtags_date(limit: int = Query(10), db: Session = Depends(get_db))
     """Get top hashtags sorted by creation date (newest first)."""
     hashtags = crud.get_top_hashtags_by_date(db, limit=limit)
     return {"top_hashtags": hashtags}
+
+
+@router.get("/hashtags/{hashtag_id}", response_model=HashtagDetailResponse)
+def get_hashtag(hashtag_id: int, db: Session = Depends(get_db)):
+    """Get hashtag details with associated tweets (Warning: loads ALL tweets)."""
+    hashtag = crud.get_hashtag(db, hashtag_id)
+    if not hashtag:
+        raise HTTPException(status_code=404, detail="Hashtag not found")
+    return hashtag
+
+
+@router.get("/hashtags/{hashtag_id}/summary", response_model=HashtagSummaryResponse)
+def get_hashtag_summary(hashtag_id: int, db: Session = Depends(get_db)):
+    """Get hashtag summary with tweet count."""
+    hashtag = crud.get_hashtag(db, hashtag_id)
+    if not hashtag:
+        raise HTTPException(status_code=404, detail="Hashtag not found")
+    
+    count = crud.count_tweets_by_hashtag(db, hashtag_id)
+    
+    return {
+        "id": hashtag.id,
+        "name": hashtag.name,
+        "created_at": hashtag.created_at,
+        "tweet_count": count
+    }
+
+
+@router.get("/hashtags/{hashtag_id}/tweets", response_model=TweetListResponse)
+def get_hashtag_tweets_paginated(
+    hashtag_id: int, 
+    skip: int = Query(0, ge=0), 
+    limit: int = Query(20, ge=1, le=100), 
+    db: Session = Depends(get_db)
+):
+    """Get paginated tweets for a hashtag."""
+    # Verify hashtag exists
+    hashtag = crud.get_hashtag(db, hashtag_id)
+    if not hashtag:
+        raise HTTPException(status_code=404, detail="Hashtag not found")
+    
+    tweets = crud.get_tweets_by_hashtag_paginated(db, hashtag_id, skip=skip, limit=limit)
+    total = crud.count_tweets_by_hashtag(db, hashtag_id)
+    
+    return {
+        "tweets": tweets,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
 
 
 # ============================================================================

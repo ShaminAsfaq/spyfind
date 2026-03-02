@@ -28,10 +28,21 @@ class UserCreate(UserBase):
     pass
 
 
+class BotDetectionResponse(BaseModel):
+    """Schema for bot detection status."""
+    is_bot: bool
+    source: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class UserResponse(UserBase):
     """Schema for user response."""
     id: int
     created_at: Optional[datetime] = None
+    bot_status: Optional[BotDetectionResponse] = None
 
     class Config:
         from_attributes = True
@@ -88,6 +99,22 @@ class HashtagDetailResponse(HashtagResponse):
 
     class Config:
         from_attributes = True
+
+
+class HashtagSummaryResponse(HashtagResponse):
+    """Schema for hashtag response with tweet count instead of list."""
+    tweet_count: int
+
+    class Config:
+        from_attributes = True
+
+
+class TweetListResponse(BaseModel):
+    """Schema for paginated tweet list."""
+    tweets: List[TweetResponse]
+    total: int
+    skip: int
+    limit: int
 
 
 class RepostCreate(BaseModel):

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Bot Detector - Spyfind</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #1da1f2 0%, #007bff 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+
+        .nav-links a:hover {
+            opacity: 1;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 3rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            margin-bottom: 1.5rem;
+            color: #1da1f2;
+            text-align: center;
+            font-size: 2rem;
+        }
+
+        .description {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        input {
+            flex: 1;
+            padding: 0.8rem 1.2rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #1da1f2;
+        }
+
+        .btn {
+            background-color: #1da1f2;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #1991da;
+        }
+
+        .result-container {
+            display: none;
+            margin-top: 2rem;
+            border-top: 1px solid #eee;
+            padding-top: 2rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            background-color: #1da1f2;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .user-names h2 {
+            font-size: 1.3rem;
+        }
+
+        .user-names p {
+            color: #666;
+        }
+
+        .prediction-box {
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .prediction-bot {
+            background-color: #fff1f0;
+            border: 1px solid #ffa39e;
+            color: #cf1322;
+        }
+
+        .prediction-human {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #389e0d;
+        }
+
+        .prediction-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .prediction-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .feature-item {
+            background: #fcfcfc;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #f0f0f0;
+        }
+
+        .feature-label {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 0.2rem;
+        }
+
+        .feature-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .error {
+            display: none;
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .footer-note {
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: #999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div style="font-size: 1.5rem; font-weight: bold;">Spyfind</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/admin">Users</a>
+            <a href="/admin/hashtags">Hashtags</a>
+            <a href="/admin/bot-detector" style="border-bottom: 2px solid white;">Bot Detector</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h1>ML Bot Detector</h1>
+            <p class="description">Enter a username to run the machine learning prediction model.</p>
+            
+            <div id="errorMessage" class="error"></div>
+
+            <div class="search-box">
+                <input type="text" id="usernameInput" placeholder="Enter username (e.g. tarunkjuyal)" autocomplete="off">
+                <button class="btn" onclick="startPrediction()">Detect Bot</button>
+            </div>
+
+            <div id="loadingIndicator" class="loading">
+                <div style="margin-bottom: 10px;">🧠 Processing user data...</div>
+                <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #1da1f2; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+            </div>
+
+            <div id="resultContainer" class="result-container">
+                <div class="user-header">
+                    <div id="userAvatar" class="avatar">U</div>
+                    <div class="user-names">
+                        <h2 id="displayName">Display Name</h2>
+                        <p id="usernameLabel">@username</p>
+                    </div>
+                </div>
+
+                <div id="predictionBox" class="prediction-box">
+                    <div class="prediction-label">AI Prediction</div>
+                    <div id="predictionValue" class="prediction-value">...</div>
+                    <div id="confidenceValue" style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.8;"></div>
+                </div>
+
+                <h3 style="margin-bottom: 1rem; font-size: 1rem;">Calculated Features</h3>
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="feature-label">Statuses Count</div>
+                        <div id="featStatuses" class="feature-value">-</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-label">Followers Count</div>
+                        <div id="featFollowers" class="feature-value">-</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-label">Friends Count</div>
+                        <div id="featFriends" class="feature-value">-</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-label">Reputation Score</div>
+                        <div id="featReputation" class="feature-value">-</div>
+                    </div>
+                    <div class="feature-item" style="grid-column: span 2;">
+                        <div class="feature-label">Post to Follower Ratio</div>
+                        <div id="featRatio" class="feature-value">-</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 2rem;">
+                    <a id="profileLink" href="#" class="btn" style="background-color: #f0f2f5; color: #1da1f2; text-decoration: none; display: inline-block;">View Full Profile</a>
+                </div>
+            </div>
+
+            <p class="footer-note">This prediction is based on a Decision Tree Classifier trained on social spambot datasets.</p>
+        </div>
+    </div>
+
+    <script>
+        async function startPrediction() {
+            const input = document.getElementById('usernameInput');
+            const username = input.value.trim().replace(/^@/, '');
+            
+            if (!username) return;
+
+            // Reset UI
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('loadingIndicator').style.display = 'block';
+
+            try {
+                const response = await fetch(`/api/predict/${encodeURIComponent(username)}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to analyze user');
+                }
+
+                // If successful, clear the input
+                input.value = '';
+                displayResults(data);
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = error.message;
+                document.getElementById('errorMessage').style.display = 'block';
+            } finally {
+                document.getElementById('loadingIndicator').style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            const container = document.getElementById('resultContainer');
+            const predBox = document.getElementById('predictionBox');
+            
+            // Set basic info
+            document.getElementById('displayName').textContent = data.display_name;
+            document.getElementById('usernameLabel').textContent = `@${data.username}`;
+            document.getElementById('userAvatar').textContent = data.display_name.charAt(0).toUpperCase();
+            
+            // Set prediction
+            const val = document.getElementById('predictionValue');
+            val.textContent = data.is_bot ? '🤖 BOT' : '👤 HUMAN';
+            
+            predBox.className = 'prediction-box ' + (data.is_bot ? 'prediction-bot' : 'prediction-human');
+            
+            if (data.confidence) {
+                document.getElementById('confidenceValue').textContent = `AI Confidence: ${data.confidence}%`;
+            } else {
+                document.getElementById('confidenceValue').textContent = '';
+            }
+
+            // Set features
+            document.getElementById('featStatuses').textContent = data.features.statuses_count.toLocaleString();
+            document.getElementById('featFollowers').textContent = data.features.followers_count.toLocaleString();
+            document.getElementById('featFriends').textContent = data.features.friends_count.toLocaleString();
+            document.getElementById('featReputation').textContent = data.features.reputation.toFixed(4);
+            document.getElementById('featRatio').textContent = data.features.post_to_follower_ratio.toFixed(4);
+
+            // Profile link - open in new tab
+            const profileLink = document.getElementById('profileLink');
+            profileLink.href = `/profile/${data.user_id}`;
+            profileLink.target = '_blank';
+            profileLink.onclick = null; // Remove the search-based override
+
+            container.style.display = 'block';
+        }
+
+        // Handle Enter key
+        document.getElementById('usernameInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                startPrediction();
+            }
+        });
+
+        // Check URL parameters for auto-search
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const user = urlParams.get('user');
+            if (user) {
+                document.getElementById('usernameInput').value = user;
+                startPrediction();
+            }
+        };
+    </script>
+
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</body>
+</html>

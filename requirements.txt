@@ -3,3 +3,8 @@ uvicorn==0.41.0
 sqlalchemy==2.0.47
 python-dateutil==2.9.0.post0
 pydantic==2.12.5
+numpy
+pandas
+scikit-learn
+
+joblib
