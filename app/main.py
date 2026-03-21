@@ -50,6 +50,15 @@ def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/newsfeed")
+def newsfeed_page():
+    """Serve the latest tweets newsfeed page."""
+    html_path = os.path.join(os.path.dirname(__file__), "..", "user_management_panel", "templates", "newsfeed.html")
+    if os.path.exists(html_path):
+        return FileResponse(html_path, media_type="text/html")
+    return {"message": "Newsfeed page template not found"}
+
+
 @app.get("/admin")
 def admin_panel():
     """Serve the admin user management panel."""

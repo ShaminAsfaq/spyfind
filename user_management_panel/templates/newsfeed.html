@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsfeed - Spyfind</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #1c1e21;
+            line-height: 1.5;
+            padding-bottom: 40px;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .navbar-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e4e6eb;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .feed-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Tweet Styles */
+        .tweets-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .tweet-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .tweet-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .tweet-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .tweet-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .tweet-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .tweet-author-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .tweet-author-name {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #050505;
+        }
+
+        .tweet-author-name:hover {
+            text-decoration: underline;
+        }
+
+        .tweet-meta {
+            font-size: 0.9rem;
+            color: #65676b;
+        }
+
+        .tweet-content {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #1c1e21;
+        }
+
+        .tweet-footer {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 12px;
+            border-top: 1px solid #f0f2f5;
+            color: #65676b;
+        }
+
+        .tweet-actions {
+            display: flex;
+            gap: 30px;
+        }
+
+        .tweet-action {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .tweet-action:hover {
+            color: #667eea;
+        }
+
+        .tweet-action.like:hover {
+            color: #e0245e;
+        }
+
+        /* Loading & Sentinel */
+        .loading-sentinel {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .no-more-tweets {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-style: italic;
+            font-size: 1.1rem;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hashtag {
+            color: #1da1f2;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .hashtag:hover {
+            text-decoration: underline;
+        }
+
+        /* New Tweet Badge */
+        .new-tweet-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 1000;
+            border: none;
+        }
+
+        .new-tweet-btn:hover {
+            transform: scale(1.1) rotate(10deg);
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-content">
+            <h1 onclick="window.location.href='/'">Spyfind</h1>
+            <div class="nav-buttons">
+                <button class="btn btn-primary" onclick="window.location.href='/newsfeed'">📰 Feed</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin'">👥 Users</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 class="feed-title">🌎 Latest Tweets</h2>
+        
+        <div class="tweets-container" id="tweetsContainer">
+            <!-- Tweets will be loaded here -->
+        </div>
+
+        <div id="loadingSentinel" class="loading-sentinel">
+            <div class="loading-spinner"></div>
+            <span style="margin-left: 15px;">Fetching latest tweets...</span>
+        </div>
+        
+        <div id="noMoreTweets" class="no-more-tweets" style="display: none;">
+            ✨ You're all caught up!
+        </div>
+    </div>
+
+    <button class="new-tweet-btn" onclick="window.location.href='/admin/post-tweet'" title="Post a new tweet">
+        ➕
+    </button>
+
+    <script>
+        let skip = 0;
+        const limit = 20;
+        let isLoading = false;
+        let hasMore = true;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTweets();
+            setupInfiniteScroll();
+        });
+
+        async function loadTweets() {
+            if (isLoading || !hasMore) return;
+            
+            isLoading = true;
+            document.getElementById('loadingSentinel').style.display = 'flex';
+
+            try {
+                const response = await fetch(`/api/tweets?skip=${skip}&limit=${limit}`);
+                if (!response.ok) throw new Error('Failed to fetch tweets');
+                
+                const tweets = await response.json();
+
+                if (tweets.length < limit) {
+                    hasMore = false;
+                    document.getElementById('loadingSentinel').style.display = 'none';
+                    document.getElementById('noMoreTweets').style.display = 'block';
+                }
+
+                if (tweets.length > 0) {
+                    renderTweets(tweets);
+                    skip += tweets.length;
+                } else if (skip === 0) {
+                    document.getElementById('tweetsContainer').innerHTML = `
+                        <div class="no-more-tweets">
+                            <p>No tweets found in the database.</p>
+                            <button class="btn btn-primary" style="margin-top: 15px;" onclick="window.location.href='/admin/post-tweet'">
+                                Create First Tweet
+                            </button>
+                        </div>`;
+                    document.getElementById('loadingSentinel').style.display = 'none';
+                    document.getElementById('noMoreTweets').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading tweets:', error);
+                if (skip === 0) {
+                    document.getElementById('tweetsContainer').innerHTML = '<div class="no-more-tweets" style="color: #ff4d4d;">Failed to load feed. Please try again later.</div>';
+                }
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        function renderTweets(tweets) {
+            const container = document.getElementById('tweetsContainer');
+            
+            tweets.forEach(tweet => {
+                const tweetCard = document.createElement('div');
+                tweetCard.className = 'tweet-card';
+                tweetCard.onclick = () => window.location.href = `/profile/${tweet.author.id}`;
+                
+                const date = new Date(tweet.created_at);
+                const formattedDate = formatTweetDate(date);
+
+                // Simple hashtag highlighting
+                let content = tweet.content.replace(/#(\w+)/g, '<span class="hashtag">#$1</span>');
+                
+                const author = tweet.author;
+                const firstLetter = author.display_name.charAt(0).toUpperCase();
+                const avatarColor = author.profile_color || '#667eea';
+
+                tweetCard.innerHTML = `
+                    <div class="tweet-header">
+                        <div class="tweet-avatar" style="background-color: ${avatarColor}">
+                            ${author.profile_image_url ? `<img src="${author.profile_image_url}" onerror="this.parentElement.innerHTML='${firstLetter}';">` : firstLetter}
+                        </div>
+                        <div class="tweet-author-info">
+                            <span class="tweet-author-name">${author.display_name}</span>
+                            <span class="tweet-meta">@${author.username} · ${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="tweet-content">${content}</div>
+                    <div class="tweet-footer">
+                        <div class="tweet-actions">
+                            <div class="tweet-action" title="Comments">
+                                💬 <span>${tweet.comments_count || 0}</span>
+                            </div>
+                            <div class="tweet-action" title="Retweets">
+                                🔁 <span>${tweet.retweets_count || 0}</span>
+                            </div>
+                            <div class="tweet-action like" title="Likes" onclick="handleLike(event, ${tweet.id}, this)">
+                                ❤️ <span>${tweet.likes_count || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(tweetCard);
+            });
+        }
+
+        async function handleLike(event, tweetId, element) {
+            event.stopPropagation(); // Don't trigger the card's onclick
+            
+            try {
+                const response = await fetch(`/api/tweets/${tweetId}/like`, { method: 'POST' });
+                if (response.ok) {
+                    const updatedTweet = await response.json();
+                    element.querySelector('span').textContent = updatedTweet.likes_count;
+                    element.style.color = '#e0245e';
+                    element.style.transform = 'scale(1.2)';
+                    setTimeout(() => element.style.transform = 'scale(1)', 200);
+                }
+            } catch (error) {
+                console.error('Error liking tweet:', error);
+            }
+        }
+
+        function setupInfiniteScroll() {
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && hasMore && !isLoading) {
+                    loadTweets();
+                }
+            }, {
+                rootMargin: '400px'
+            });
+
+            observer.observe(document.getElementById('loadingSentinel'));
+        }
+
+        function formatTweetDate(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            // Format for time
+            const timeStr = date.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            });
+
+            if (diffInSeconds < 60) return 'Just now';
+            if (diffInSeconds < 3600) return Math.floor(diffInSeconds / 60) + 'm ago';
+            if (diffInSeconds < 86400) return Math.floor(diffInSeconds / 3600) + 'h ago';
+            
+            const dateStr = date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+            });
+
+            return `${dateStr} at ${timeStr}`;
+        }
+    </script>
+</body>
+</html>

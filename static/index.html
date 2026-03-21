@@ -632,6 +632,7 @@
             <h1>Spyfind</h1>
             <div class="nav-buttons">
                 <button class="btn btn-secondary" onclick="showHome()">🏠 Home</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/newsfeed'">📰 Feed</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin'">👥 Users</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post Tweet</button>
@@ -779,14 +780,25 @@
             const hours = Math.floor(minutes / 60);
             const days = Math.floor(hours / 24);
 
+            const timeStr = date.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            });
+
             if (days > 7) {
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+                const dateStr = date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined 
+                });
+                return `${dateStr} at ${timeStr}`;
             } else if (days > 0) {
-                return `${days}d`;
+                return `${days}d ago at ${timeStr}`;
             } else if (hours > 0) {
-                return `${hours}h`;
+                return `${hours}h ago`;
             } else if (minutes > 0) {
-                return `${minutes}m`;
+                return `${minutes}m ago`;
             } else {
                 return 'now';
             }

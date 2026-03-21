@@ -132,8 +132,8 @@ def get_tweet(db: Session, tweet_id: int) -> Optional[Tweet]:
 
 
 def get_tweets(db: Session, skip: int = 0, limit: int = 100) -> List[Tweet]:
-    """Get all tweets with pagination."""
-    return db.query(Tweet).offset(skip).limit(limit).all()
+    """Get all tweets with pagination, ordered by latest first."""
+    return db.query(Tweet).order_by(Tweet.created_at.desc()).offset(skip).limit(limit).all()
 
 
 def extract_hashtags(content: str) -> List[str]:

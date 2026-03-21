@@ -212,6 +212,11 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"message": "User deleted successfully", "user_id": user_id}
 
 
+class HashtagInjectionRequest(BaseModel):
+    user_id: int
+    hashtags: str
+    percentage: int
+
 @router.post("/inject")
 def inject_hashtags(
     request: HashtagInjectionRequest,
