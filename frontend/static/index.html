@@ -18,18 +18,22 @@
         }
 
         .navbar {
-            background-color: #fff;
-            border-bottom: 1px solid #e0e0e0;
-            padding: 1rem 0;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(230, 230, 230, 0.5);
+            padding: 12px 0;
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
         .navbar-content {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 0 1rem;
+            padding: 0 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -37,23 +41,28 @@
 
         .navbar h1 {
             font-size: 1.5rem;
-            font-weight: 700;
+            font-weight: 800;
             color: #1da1f2;
+            margin: 0;
+            cursor: pointer;
         }
 
         .nav-buttons {
             display: flex;
-            gap: 0.5rem;
+            gap: 10px;
         }
 
         .btn {
-            padding: 0.5rem 1rem;
+            padding: 8px 16px;
             border: none;
             border-radius: 20px;
             cursor: pointer;
             font-size: 0.95rem;
             font-weight: 600;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .btn-primary {
@@ -63,15 +72,17 @@
 
         .btn-primary:hover {
             background-color: #1a91da;
+            transform: translateY(-1px);
         }
 
         .btn-secondary {
-            background-color: #f0f0f0;
-            color: #333;
+            background-color: #f0f2f5;
+            color: #1c1e21;
         }
 
         .btn-secondary:hover {
-            background-color: #e0e0e0;
+            background-color: #e4e6eb;
+            transform: translateY(-1px);
         }
 
         .container {
@@ -635,8 +646,10 @@
                 <button class="btn btn-secondary" onclick="window.location.href='/newsfeed'">📰 Feed</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin'">👥 Users</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/hashtag-analyzer'">📊 Analyzer</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post Tweet</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/bot-detector'">🤖 Bot Detector</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/demonstration'">🧪 Demo</button>
                 <button class="btn btn-primary" onclick="openTweetModal()">New Roar</button>
             </div>
         </div>
@@ -742,7 +755,7 @@
     </div>
 
     <script>
-        const API_BASE = '/api';
+        const API_BASE = 'http://localhost:8000';
 
         // Pagination state
         let currentHashtagId = null;
@@ -756,7 +769,7 @@
         // ===== UTILITY FUNCTIONS =====
         async function fetchAPI(endpoint, options = {}) {
             try {
-                const response = await fetch(`${API_BASE}${endpoint}`, {
+                const response = await fetch(`${API_BASE}/api${endpoint}`, {
                     headers: { 'Content-Type': 'application/json' },
                     ...options
                 });

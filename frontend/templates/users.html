@@ -616,14 +616,16 @@
 <body>
     <div class="navbar">
         <div class="navbar-content">
-            <h1>Spyfind Admin</h1>
+            <h1 onclick="window.location.href='/'">Spyfind</h1>
             <div class="nav-buttons">
                 <button class="btn btn-secondary" onclick="window.location.href='/'">🏠 Home</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/newsfeed'">📰 Feed</button>
                 <button class="btn btn-primary" onclick="window.location.href='/admin'">👥 Users</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
-                <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post Tweet</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/hashtag-analyzer'">📊 Analyzer</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/bot-detector'">🤖 Bot Detector</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/demonstration'">🧪 Demo</button>
             </div>
         </div>
     </div>
@@ -879,7 +881,7 @@
     </div>
 
     <script>
-        const API_BASE = '/admin/users';
+        const API_BASE = 'http://localhost:8000';
         let currentPage = 1;
         let pageSize = 50;
         let searchQuery = '';
@@ -935,7 +937,7 @@
                 const skip = (currentPage - 1) * pageSize;
                 const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
                 const statusParam = filterStatus !== 'all' ? `&status=${filterStatus}` : '';
-                const url = `${API_BASE}/?skip=${skip}&limit=${pageSize}${searchParam}${statusParam}`;
+                const url = `${API_BASE}/admin/users/?skip=${skip}&limit=${pageSize}${searchParam}${statusParam}`;
 
                 console.log('Fetching users from:', url);
                 const response = await fetch(url);
@@ -972,7 +974,7 @@
             try {
                 const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
                 const statusParam = filterStatus !== 'all' ? `&status=${filterStatus}` : '';
-                const response = await fetch(`${API_BASE}/count?${searchParam}${statusParam}`);
+                const response = await fetch(`${API_BASE}/admin/users/count?${searchParam}${statusParam}`);
                 const data = await response.json();
                 totalUsers = data.total;
                 document.getElementById('totalUsers').textContent = totalUsers;
@@ -1044,7 +1046,7 @@
 
         async function editUser(userId) {
             try {
-                const response = await fetch(`${API_BASE}/${userId}`);
+                const response = await fetch(`${API_BASE}/admin/users/${userId}`);
                 if (!response.ok) throw new Error('Failed to load user');
 
                 const user = await response.json();
@@ -1096,7 +1098,7 @@
             };
 
             try {
-                const url = userId ? `${API_BASE}/${userId}` : API_BASE;
+                const url = userId ? `${API_BASE}/admin/users/${userId}` : `${API_BASE}/admin/users`;
                 const method = userId ? 'PUT' : 'POST';
 
                 const response = await fetch(url, {
@@ -1127,7 +1129,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/${userId}`, {
+                const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
                     method: 'DELETE'
                 });
 
@@ -1170,7 +1172,7 @@
 
         async function viewUserProfile(userId) {
             try {
-                const response = await fetch(`${API_BASE}/${userId}`);
+                const response = await fetch(`${API_BASE}/admin/users/${userId}`);
                 if (!response.ok) throw new Error('Failed to load user');
 
                 const user = await response.json();
@@ -1258,6 +1260,31 @@
                 // Show modal
                 document.getElementById('goToProfileBtn').href = `/profile/${user.id}`;
                 document.getElementById('profileModal').classList.add('active');
+            } catch (error) {
+                showMessage('Error loading user profile: ' + error.message, 'error');
+            }
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('userModal').addEventListener('click', (e) => {
+            if (e.target.id === 'userModal') {
+                closeModal();
+            }
+        });
+
+        document.getElementById('profileModal').addEventListener('click', (e) => {
+            if (e.target.id === 'profileModal') {
+                closeProfileModal();
+            }
+        });
+    </script>
+</body>
+</html>
+              document.getElementById('profileModal').classList.add('active');
             } catch (error) {
                 showMessage('Error loading user profile: ' + error.message, 'error');
             }

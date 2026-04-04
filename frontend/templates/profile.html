@@ -22,20 +22,20 @@
         }
 
         .navbar {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(230, 230, 230, 0.5);
             padding: 12px 0;
             position: sticky;
             top: 0;
             z-index: 1000;
             width: 100%;
-            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
         .navbar-content {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
             display: flex;
@@ -46,10 +46,9 @@
         .navbar h1 {
             font-size: 1.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #1da1f2;
             margin: 0;
+            cursor: pointer;
         }
 
         .nav-buttons {
@@ -65,21 +64,34 @@
             font-size: 0.95rem;
             font-weight: 600;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #1da1f2;
             color: white;
         }
 
+        .btn-primary:hover {
+            background-color: #1a91da;
+            transform: translateY(-1px);
+        }
+
         .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
+            background-color: #f0f2f5;
+            color: #1c1e21;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e4e6eb;
+            transform: translateY(-1px);
         }
 
         .container {
             max-width: 800px;
-            margin: 0 auto;
+            margin: 30px auto 0;
             padding: 0 20px;
         }
 
@@ -357,13 +369,16 @@
 <body>
     <div class="navbar">
         <div class="navbar-content">
-            <h1>Spyfind</h1>
+            <h1 onclick="window.location.href='/'">Spyfind</h1>
             <div class="nav-buttons">
                 <button class="btn btn-secondary" onclick="window.location.href='/'">🏠 Home</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/newsfeed'">📰 Feed</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin'">👥 Users</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
-                <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post Tweet</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/hashtag-analyzer'">📊 Analyzer</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/bot-detector'">🤖 Bot Detector</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/demonstration'">🧪 Demo</button>
             </div>
         </div>
     </div>
@@ -432,6 +447,7 @@
     </div>
 
     <script>
+        const API_BASE = 'http://localhost:8000';
         const userId = window.location.pathname.split('/').pop();
         
         function handleBack() {
@@ -468,7 +484,7 @@
 
         async function loadUserProfile() {
             try {
-                const response = await fetch(`/api/users/${userId}`);
+                const response = await fetch(`${API_BASE}/api/users/${userId}`);
                 if (!response.ok) throw new Error('User not found');
                 
                 userData = await response.json();
@@ -538,7 +554,7 @@
             document.getElementById('loadingSentinel').style.display = 'flex';
 
             try {
-                const response = await fetch(`/api/users/${userId}/tweets?skip=${skip}&limit=${limit}`);
+                const response = await fetch(`${API_BASE}/api/users/${userId}/tweets?skip=${skip}&limit=${limit}`);
                 const tweets = await response.json();
 
                 if (tweets.length < limit) {

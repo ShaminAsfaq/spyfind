@@ -79,25 +79,47 @@ You should see something like:
 ✅ Database seeding complete!
 ```
 
-### Step 3: Start the Server
+### Step 3: Start the Servers
 
+Spyfind now runs on a **dual-server architecture** (separated Frontend and Backend):
+
+- **Backend (API):** Handles the database, ML model, and data logic. Runs on port **8000**.
+- **Frontend (UI):** Handles the website interface. Runs on port **3000**.
+
+#### Automatic Startup (Recommended)
+Use the provided script to start both servers at once:
+
+- **On Windows:**
+  ```bash
+  run_servers.bat
+  ```
+- **On Mac/Linux:**
+  ```bash
+  chmod +x run_servers.sh
+  ./run_servers.sh
+  ```
+
+#### Manual Startup
+If you want to run them in separate terminal windows:
+
+**Terminal 1 (Backend):**
 ```bash
-python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-You should see:
+**Terminal 2 (Frontend):**
+```bash
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+python -m uvicorn frontend.main:app --host 0.0.0.0 --port 3000 --reload
 ```
-INFO:     Started server process
-INFO:     Uvicorn running on http://0.0.0.0:8000
-```
 
-**Copy this into your browser:** `http://localhost:8000`
+**Visit the website:** `http://localhost:3000`
+**View the API documentation:** `http://localhost:8000/docs`
 
-You should see the Spyfind website! 🎉
+### Step 4: Stop the Servers
 
-### Step 4: Stop the Server
-
-Press **Ctrl + C** in the terminal to stop the server.
+Press **Ctrl + C** in each terminal window to stop the servers.
 
 ---
 

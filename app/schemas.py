@@ -154,3 +154,32 @@ class CommentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DemonstrationRequest(BaseModel):
+    """Schema for demonstration request."""
+    num_bots: int
+    num_posts: int
+    hashtags: str
+
+
+class HashtagAnalysisUser(BaseModel):
+    """Schema for a user in hashtag analysis."""
+    id: int
+    username: str
+    display_name: str
+    prediction: str
+    is_bot: bool
+    confidence: Optional[int] = None
+
+
+class HashtagAnalysisResponse(BaseModel):
+    """Schema for detailed hashtag analysis report."""
+    hashtag_id: int
+    hashtag_name: str
+    total_tweets: int
+    total_users: int
+    bot_count: int
+    human_count: int
+    bot_percentage: float
+    users: List[HashtagAnalysisUser]

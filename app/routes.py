@@ -12,11 +12,125 @@ from app.schemas import (
     HashtagResponse, HashtagDetailResponse, HashtagSummaryResponse,
     TweetResponse, TweetCreate, TweetListResponse,
     RepostResponse, RepostCreate,
-    CommentResponse, CommentCreate
+    CommentResponse, CommentCreate,
+    DemonstrationRequest,
+    HashtagAnalysisResponse, HashtagAnalysisUser
 )
 from app import crud
+from app.models import BotDetection
 
 router = APIRouter(prefix="/api", tags=["api"])
+
+
+# ============================================================================
+# DEMONSTRATION ENDPOINT
+# ============================================================================
+
+@router.post("/demonstrate")
+def demonstrate(request: DemonstrationRequest, db: Session = Depends(get_db)):
+    """
+    Demonstration feature: Create bots, seed tweets, and inject hashtags.
+    """
+    import random
+    import string
+    
+    # 1. Load bot data
+    bot_csv_path = os.path.join(os.path.dirname(__file__), "..", "data_source", "social_spambots_1.csv", "users.csv")
+    if not os.path.exists(bot_csv_path):
+        raise HTTPException(status_code=500, detail="Bot data source not found")
+    
+    try:
+        df = pd.read_csv(bot_csv_path)
+        # Filter out some usable bots
+        available_bots = df.to_dict('records')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading bot data: {str(e)}")
+
+    if not available_bots:
+        raise HTTPException(status_code=500, detail="No bots found in data source")
+
+    # 2. Process hashtags
+    hashtag_list = [h.strip().lstrip('#') for h in request.hashtags.split(',') if h.strip()]
+    
+    created_users = []
+    total_tweets_created = 0
+
+    for _ in range(request.num_bots):
+        # Pick a random bot template
+        bot_template = random.choice(available_bots)
+        
+        base_username = str(bot_template.get('screen_name', 'bot_user'))
+        display_name = str(bot_template.get('name', 'Bot User'))
+        
+        # Handle uniqueness
+        username = base_username
+        while crud.get_user_by_username(db, username):
+            suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
+            username = f"{base_username}_{suffix}"
+        
+        # Create User object
+        user_in = UserCreate(
+            username=username,
+            display_name=display_name,
+            bio=str(bot_template.get('description', ''))[:160] if pd.notna(bot_template.get('description')) else "",
+            location=str(bot_template.get('location', ''))[:30] if pd.notna(bot_template.get('location')) else "",
+            followers_count=int(bot_template.get('followers_count', 0)) if pd.notna(bot_template.get('followers_count')) else 0,
+            following_count=int(bot_template.get('friends_count', 0)) if pd.notna(bot_template.get('friends_count')) else 0,
+            posts_count=request.num_posts, # Set to match actual created posts
+            likes_count=0,
+            retweets_count=0,
+            profile_image_url=bot_template.get('profile_image_url') if pd.notna(bot_template.get('profile_image_url')) else None
+        )
+        
+        db_user = crud.create_user(db, user_in)
+        
+        # MANUALLY UPDATE BotDetection to True and set source
+        bot_status = db.query(BotDetection).filter(BotDetection.user_id == db_user.id).first()
+        if bot_status:
+            bot_status.is_bot = True
+            bot_status.source = "demonstration_panel"
+            db.commit()
+        
+        created_users.append(db_user)
+        
+        # 3. Create posts for this bot
+        bot_tweet_contents = [
+            "Just setting up my roar! #newbie",
+            "This simulation is interesting.",
+            "Testing the bot detector functionality.",
+            "I love sharing automated updates!",
+            "Did you know that bots can be helpful too?",
+            "Analyzing the latest trends in social media.",
+            "Hello world! I am a simulated account.",
+            "Looking for new friends to follow.",
+            "Sharing some interesting facts today.",
+            "Automated post for demonstration purposes."
+        ]
+        
+        for i in range(request.num_posts):
+            base_content = random.choice(bot_tweet_contents)
+            
+            # Add random hashtags from the list
+            if hashtag_list:
+                num_tags = random.randint(1, min(3, len(hashtag_list)))
+                selected_tags = random.sample(hashtag_list, num_tags)
+                tag_str = " " + " ".join([f"#{t}" for t in selected_tags])
+                content = f"{base_content}{tag_str}"
+            else:
+                content = base_content
+            
+            tweet_in = TweetCreate(
+                content=content,
+                author_id=db_user.id
+            )
+            crud.create_tweet(db, tweet_in)
+            total_tweets_created += 1
+
+    return {
+        "message": f"Successfully created {request.num_bots} bots and {total_tweets_created} total posts.",
+        "bots_created": len(created_users),
+        "posts_created": total_tweets_created
+    }
 
 
 # ============================================================================
@@ -60,6 +174,42 @@ def get_user_tweets(user_id: int, skip: int = Query(0), limit: int = Query(20), 
     return tweets
 
 
+def _perform_bot_prediction(user, model):
+    """Internal helper to run model on a user object."""
+    # Calculate features
+    statuses = user.posts_count or 0
+    followers = user.followers_count or 0
+    friends = user.following_count or 0
+    reputation = followers / (followers + friends + 1)
+    post_to_follower_ratio = statuses / (followers + 1)
+    
+    feature_names = ['statuses_count', 'followers_count', 'friends_count', 'reputation', 'post_to_follower_ratio']
+    df = pd.DataFrame([[statuses, followers, friends, reputation, post_to_follower_ratio]], columns=feature_names)
+    
+    prediction = bool(model.predict(df)[0])
+    
+    confidence = None
+    if hasattr(model, "predict_proba"):
+        probs = model.predict_proba(df)
+        confidence = int(max(probs[0]) * 100)
+
+    return {
+        "user_id": user.id,
+        "username": user.username,
+        "display_name": user.display_name,
+        "prediction": "BOT" if prediction else "HUMAN",
+        "is_bot": prediction,
+        "confidence": confidence,
+        "features": {
+            "statuses_count": statuses,
+            "followers_count": followers,
+            "friends_count": friends,
+            "reputation": round(reputation, 4),
+            "post_to_follower_ratio": round(post_to_follower_ratio, 4)
+        }
+    }
+
+
 @router.get("/predict/{username}")
 def predict_bot(username: str, db: Session = Depends(get_db)):
     """Predict if a user is a bot using the ML model."""
@@ -73,39 +223,7 @@ def predict_bot(username: str, db: Session = Depends(get_db)):
 
     try:
         model = joblib.load(model_path)
-        
-        # Calculate features
-        statuses = user.posts_count or 0
-        followers = user.followers_count or 0
-        friends = user.following_count or 0
-        reputation = followers / (followers + friends + 1)
-        post_to_follower_ratio = statuses / (followers + 1)
-        
-        feature_names = ['statuses_count', 'followers_count', 'friends_count', 'reputation', 'post_to_follower_ratio']
-        df = pd.DataFrame([[statuses, followers, friends, reputation, post_to_follower_ratio]], columns=feature_names)
-        
-        prediction = bool(model.predict(df)[0])
-        
-        confidence = None
-        if hasattr(model, "predict_proba"):
-            probs = model.predict_proba(df)
-            confidence = int(max(probs[0]) * 100)
-
-        return {
-            "user_id": user.id,
-            "username": user.username,
-            "display_name": user.display_name,
-            "prediction": "BOT" if prediction else "HUMAN",
-            "is_bot": prediction,
-            "confidence": confidence,
-            "features": {
-                "statuses_count": statuses,
-                "followers_count": followers,
-                "friends_count": friends,
-                "reputation": round(reputation, 4),
-                "post_to_follower_ratio": round(post_to_follower_ratio, 4)
-            }
-        }
+        return _perform_bot_prediction(user, model)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
@@ -121,7 +239,7 @@ def list_hashtags(skip: int = Query(0), limit: int = Query(100), db: Session = D
     return hashtags
 
 
-@router.get("/hashtags/search/{query}", response_model=List[HashtagResponse])
+@router.get("/hashtags/search/{query}", response_model=List[HashtagSummaryResponse])
 def search_hashtags(query: str, exact: bool = Query(False), db: Session = Depends(get_db)):
     """Search hashtags by name."""
     hashtags = crud.search_hashtags(db, query, exact=exact)
@@ -308,3 +426,71 @@ def get_user_comments(user_id: int, db: Session = Depends(get_db)):
     """Get all comments by a specific user."""
     comments = crud.get_comments_by_user(db, user_id)
     return comments
+
+
+# ============================================================================
+# HASHTAG ANALYSIS ENDPOINT
+# ============================================================================
+
+@router.get("/hashtags/{hashtag_id}/analyze", response_model=HashtagAnalysisResponse)
+def analyze_hashtag(hashtag_id: int, db: Session = Depends(get_db)):
+    """
+    Detailed hashtag analysis: 
+    1. Find all unique users who used the hashtag
+    2. Run each through the bot detector
+    3. Return aggregated statistics and user details
+    """
+    hashtag = crud.get_hashtag(db, hashtag_id)
+    if not hashtag:
+        raise HTTPException(status_code=404, detail="Hashtag not found")
+
+    tweets = hashtag.tweets
+    unique_users = {}
+    for t in tweets:
+        if t.author_id not in unique_users:
+            unique_users[t.author_id] = t.author
+
+    model_path = os.path.join(os.path.dirname(__file__), "..", "model", "bot_detector.pkl")
+    if not os.path.exists(model_path):
+        raise HTTPException(status_code=500, detail="ML model not found")
+
+    try:
+        model = joblib.load(model_path)
+        
+        analysis_users = []
+        bot_count = 0
+        human_count = 0
+        
+        for user_id, user in unique_users.items():
+            prediction_result = _perform_bot_prediction(user, model)
+            
+            is_bot = prediction_result["is_bot"]
+            if is_bot:
+                bot_count += 1
+            else:
+                human_count += 1
+                
+            analysis_users.append(HashtagAnalysisUser(
+                id=user.id,
+                username=user.username,
+                display_name=user.display_name,
+                prediction=prediction_result["prediction"],
+                is_bot=is_bot,
+                confidence=prediction_result["confidence"]
+            ))
+
+        total_users = len(unique_users)
+        bot_percentage = (bot_count / total_users * 100) if total_users > 0 else 0
+
+        return HashtagAnalysisResponse(
+            hashtag_id=hashtag.id,
+            hashtag_name=hashtag.name,
+            total_tweets=len(tweets),
+            total_users=total_users,
+            bot_count=bot_count,
+            human_count=human_count,
+            bot_percentage=round(bot_percentage, 2),
+            users=analysis_users
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")

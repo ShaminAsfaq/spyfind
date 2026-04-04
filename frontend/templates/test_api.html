@@ -11,12 +11,14 @@
     <pre id="result"></pre>
 
     <script>
+        const API_BASE = 'http://localhost:8000';
+
         async function testAPI() {
             const resultEl = document.getElementById('result');
             resultEl.textContent = 'Loading...';
 
             try {
-                const response = await fetch('/admin/users/?skip=0&limit=5');
+                const response = await fetch(`${API_BASE}/admin/users/?skip=0&limit=5`);
                 resultEl.textContent = `Status: ${response.status}\n`;
                 resultEl.textContent += `Status Text: ${response.statusText}\n\n`;
 

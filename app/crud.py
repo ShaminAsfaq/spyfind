@@ -115,15 +115,71 @@ def create_hashtag(db: Session, name: str) -> Hashtag:
     return db_hashtag
 
 
-def search_hashtags(db: Session, query: str, exact: bool = False) -> List[Hashtag]:
-    """Search hashtags by name (Case-Sensitive)."""
+def search_hashtags(db: Session, query: str, exact: bool = False) -> List[dict]:
+    """Search hashtags by name (Case-Insensitive) including tweet count, prioritizing matches."""
+    from sqlalchemy import func as sql_func, or_, case
+    
+    # Base query for selecting hashtag data and counting tweets
+    query_obj = db.query(
+        Hashtag.id,
+        Hashtag.name,
+        Hashtag.created_at,
+        sql_func.count(tweet_hashtag_association.c.tweet_id).label('tweet_count')
+    ).outerjoin(
+        tweet_hashtag_association, Hashtag.id == tweet_hashtag_association.c.hashtag_id
+    ).group_by(
+        Hashtag.id, Hashtag.name, Hashtag.created_at
+    )
+
     if exact:
-        return db.query(Hashtag).filter(
-            Hashtag.name == query
+        # For exact match, check both original and lowercase version if possible
+        # Since we use BINARY collation, we check against the name directly
+        results = query_obj.filter(
+            or_(
+                Hashtag.name == query,
+                Hashtag.name == query.lower(),
+                Hashtag.name == query.upper()
+            )
         ).all()
-    return db.query(Hashtag).filter(
-        Hashtag.name.like(f"%{query}%")
-    ).limit(50).all()
+    else:
+        # For non-exact search, we prioritize:
+        # 1. Exact case-insensitive match
+        # 2. Names starting with the query
+        # 3. Names containing the query
+        
+        q_lower = query.lower()
+        
+        # We use or_ and LIKE for broader coverage
+        results = query_obj.filter(
+            or_(
+                Hashtag.name.like(f"%{query}%"),
+                Hashtag.name.like(f"%{q_lower}%")
+            )
+        ).order_by(
+            # Sorting logic: 
+            # - Exact matches come first (regardless of case)
+            # - Then matches starting with the query
+            # - Then other matches
+            case(
+                (Hashtag.name == query, 0),
+                (Hashtag.name == q_lower, 0),
+                (Hashtag.name.like(f"{query}%"), 1),
+                (Hashtag.name.like(f"{q_lower}%"), 1),
+                else_=2
+            ),
+            # Secondary sort by popularity
+            sql_func.count(tweet_hashtag_association.c.tweet_id).desc()
+        ).limit(50).all()
+
+    return [
+        {
+            'id': r[0],
+            'name': r[1],
+            'created_at': r[2],
+            'tweet_count': r[3]
+        }
+        for r in results
+    ]
 
 
 def get_tweet(db: Session, tweet_id: int) -> Optional[Tweet]:

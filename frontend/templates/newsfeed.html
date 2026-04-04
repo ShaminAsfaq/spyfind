@@ -281,10 +281,14 @@
         <div class="navbar-content">
             <h1 onclick="window.location.href='/'">Spyfind</h1>
             <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="window.location.href='/'">🏠 Home</button>
                 <button class="btn btn-primary" onclick="window.location.href='/newsfeed'">📰 Feed</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin'">👥 Users</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/hashtags'">#️⃣ Hashtags</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/hashtag-analyzer'">📊 Analyzer</button>
                 <button class="btn btn-secondary" onclick="window.location.href='/admin/post-tweet'">📝 Post</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/admin/bot-detector'">🤖 Bot Detector</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/demonstration'">🧪 Demo</button>
             </div>
         </div>
     </div>
@@ -311,6 +315,7 @@
     </button>
 
     <script>
+        const API_BASE = 'http://localhost:8000';
         let skip = 0;
         const limit = 20;
         let isLoading = false;
@@ -329,7 +334,7 @@
             document.getElementById('loadingSentinel').style.display = 'flex';
 
             try {
-                const response = await fetch(`/api/tweets?skip=${skip}&limit=${limit}`);
+                const response = await fetch(`${API_BASE}/api/tweets?skip=${skip}&limit=${limit}`);
                 if (!response.ok) throw new Error('Failed to fetch tweets');
                 
                 const tweets = await response.json();
@@ -415,7 +420,7 @@
             event.stopPropagation(); // Don't trigger the card's onclick
             
             try {
-                const response = await fetch(`/api/tweets/${tweetId}/like`, { method: 'POST' });
+                const response = await fetch(`${API_BASE}/api/tweets/${tweetId}/like`, { method: 'POST' });
                 if (response.ok) {
                     const updatedTweet = await response.json();
                     element.querySelector('span').textContent = updatedTweet.likes_count;
